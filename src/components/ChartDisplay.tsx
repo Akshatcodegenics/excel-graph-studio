@@ -17,7 +17,7 @@ import { Bar, Line, Pie, Doughnut, Scatter, PolarArea, Radar } from 'react-chart
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, BarChart3, LineChart, PieChart, Scatter as ScatterIcon, Target, Radar as RadarIcon } from "lucide-react";
+import { Download, BarChart3, LineChart, PieChart, ChartScatter, Target, Radar as RadarIcon } from "lucide-react";
 import { toast } from "sonner";
 
 ChartJS.register(
@@ -235,7 +235,7 @@ export const ChartDisplay = ({ data, selectedChart, onChartChange }: ChartDispla
     { value: 'line', label: 'Line Chart', icon: LineChart },
     { value: 'pie', label: 'Pie Chart', icon: PieChart },
     { value: 'doughnut', label: 'Doughnut Chart', icon: PieChart },
-    { value: 'scatter', label: 'Scatter Plot', icon: ScatterIcon },
+    { value: 'scatter', label: 'Scatter Plot', icon: ChartScatter },
     { value: 'polarArea', label: 'Polar Area', icon: Target },
     { value: 'radar', label: 'Radar Chart', icon: RadarIcon },
   ];
