@@ -1,54 +1,94 @@
 
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
+import { AuthModal } from "@/components/AuthModal";
+import { AdminPanel } from "@/components/AdminPanel";
 import { FileUpload } from "@/components/FileUpload";
 import { ChartDisplay } from "@/components/ChartDisplay";
 import { UploadHistory } from "@/components/UploadHistory";
 import { ThreeJSChart } from "@/components/ThreeJSChart";
 import { AIInsights } from "@/components/AIInsights";
+import { QuickAnalysisPreview } from "@/components/QuickAnalysisPreview";
+import Dashboard from "./Dashboard";
+import Analytics from "./Analytics";
+import Reports from "./Reports";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, FileSpreadsheet, Zap, Users, Download, Brain, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 const Index = () => {
   const [uploadedData, setUploadedData] = useState(null);
   const [selectedChart, setSelectedChart] = useState("bar");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState("upload");
 
-  const features = [
-    {
-      icon: <FileSpreadsheet className="h-8 w-8 text-blue-600" />,
-      title: "Smart File Processing",
-      description: "Upload Excel files with instant parsing and intelligent data analysis"
-    },
-    {
-      icon: <BarChart3 className="h-8 w-8 text-green-600" />,
-      title: "Advanced Charts",
-      description: "Generate 7 types of interactive charts with download capabilities"
-    },
-    {
-      icon: <TrendingUp className="h-8 w-8 text-purple-600" />,
-      title: "3D Visualizations",
-      description: "Immersive 3D charts with real-time animations and controls"
-    },
-    {
-      icon: <Brain className="h-8 w-8 text-pink-600" />,
-      title: "AI Analytics",
-      description: "Get intelligent insights, trends analysis, and recommendations"
+  const handleAuthSuccess = (user: any) => {
+    setCurrentUser(user);
+    setShowAuthModal(false);
+    toast.success(`Welcome ${user.name}!`);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCurrentPage("upload");
+    toast.success("Logged out successfully");
+  };
+
+  const handleDataUploaded = (data: any) => {
+    setUploadedData(data);
+    console.log("Data uploaded:", data);
+  };
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard currentUser={currentUser} />;
+      case 'analytics':
+        return <Analytics currentUser={currentUser} />;
+      case 'reports':
+        return <Reports currentUser={currentUser} />;
+      case 'admin':
+        return <AdminPanel currentUser={currentUser} />;
+      default:
+        return renderUploadPage();
     }
-  ];
+  };
 
-  const stats = [
-    { label: "Files Processed", value: "1,234+", color: "text-blue-600" },
-    { label: "Charts Generated", value: "5,678+", color: "text-green-600" },
-    { label: "AI Reports", value: "892+", color: "text-purple-600" },
-    { label: "Data Points", value: "2.3M+", color: "text-pink-600" }
-  ];
+  const renderUploadPage = () => {
+    const features = [
+      {
+        icon: <FileSpreadsheet className="h-8 w-8 text-blue-600" />,
+        title: "Smart File Processing",
+        description: "Upload Excel files with instant parsing and intelligent data analysis"
+      },
+      {
+        icon: <BarChart3 className="h-8 w-8 text-green-600" />,
+        title: "Advanced Charts",
+        description: "Generate 7 types of interactive charts with download capabilities"
+      },
+      {
+        icon: <TrendingUp className="h-8 w-8 text-purple-600" />,
+        title: "3D Visualizations",
+        description: "Immersive 3D charts with real-time animations and controls"
+      },
+      {
+        icon: <Brain className="h-8 w-8 text-pink-600" />,
+        title: "AI Analytics",
+        description: "Get intelligent insights, trends analysis, and recommendations"
+      }
+    ];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <Navbar />
-      
+    const stats = [
+      { label: "Files Processed", value: "1,234+", color: "text-blue-600" },
+      { label: "Charts Generated", value: "5,678+", color: "text-green-600" },
+      { label: "AI Reports", value: "892+", color: "text-purple-600" },
+      { label: "Data Points", value: "2.3M+", color: "text-pink-600" }
+    ];
+
+    return (
       <div className="container mx-auto px-6 py-8">
         {/* Enhanced Hero Section */}
         <div className="text-center mb-12">
@@ -142,7 +182,7 @@ const Index = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-8">
-                  <FileUpload onDataUploaded={setUploadedData} />
+                  <FileUpload onDataUploaded={handleDataUploaded} />
                 </CardContent>
               </Card>
 
@@ -154,23 +194,7 @@ const Index = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-8">
-                  <div className="space-y-6">
-                    <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                      <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5" />
-                        Instant Data Intelligence
-                      </h4>
-                      <p className="text-green-700 text-sm mb-4">
-                        Advanced AI algorithms automatically process your data to extract meaningful patterns and insights.
-                      </p>
-                      <ul className="text-sm text-green-600 space-y-1">
-                        <li>• Real-time data validation & cleaning</li>
-                        <li>• Automatic trend detection</li>
-                        <li>• Statistical analysis & forecasting</li>
-                        <li>• Anomaly identification</li>
-                      </ul>
-                    </div>
-                  </div>
+                  <QuickAnalysisPreview data={uploadedData} />
                 </CardContent>
               </Card>
             </div>
@@ -249,6 +273,26 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <Navbar 
+        currentUser={currentUser}
+        onAuthClick={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+      />
+      
+      {renderCurrentPage()}
+
+      <AuthModal 
+        open={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 };
