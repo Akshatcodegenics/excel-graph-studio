@@ -10,46 +10,46 @@ interface DataPoint {
   label: string;
 }
 
-const AnimatedBar = ({ position, scale, color, label }: { 
+const AnimatedBar = ({ position, scale, color, label, value }: { 
   position: [number, number, number]; 
   scale: [number, number, number]; 
   color: string;
   label: string;
+  value: number;
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.05;
-      meshRef.current.scale.y = scale[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      const baseScale = scale[1];
+      meshRef.current.scale.y = baseScale + Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
   });
 
   return (
     <group>
-      <mesh ref={meshRef} position={position} scale={scale}>
-        <boxGeometry args={[1, 1, 1]} />
+      <mesh ref={meshRef} position={position} scale={scale} castShadow receiveShadow>
+        <boxGeometry args={[0.8, 1, 0.8]} />
         <meshLambertMaterial color={color} />
       </mesh>
       <Text
-        position={[position[0], position[1] - scale[1] / 2 - 0.5, position[2]]}
+        position={[position[0], -0.8, position[2]]}
         fontSize={0.3}
         color="black"
         anchorX="center"
         anchorY="middle"
-        font="/fonts/Inter-Regular.woff"
       >
         {label}
       </Text>
       <Text
         position={[position[0], position[1] + scale[1] / 2 + 0.3, position[2]]}
-        fontSize={0.2}
-        color="#666"
+        fontSize={0.25}
+        color="#333"
         anchorX="center"
         anchorY="middle"
-        font="/fonts/Inter-Regular.woff"
       >
-        {typeof position[1] === 'number' ? Math.round(position[1] * 1000) : '0'}
+        {typeof value === 'number' ? value.toLocaleString() : '0'}
       </Text>
     </group>
   );
@@ -57,12 +57,12 @@ const AnimatedBar = ({ position, scale, color, label }: {
 
 const Scene = ({ data }: { data: any }) => {
   const dataPoints: DataPoint[] = useMemo(() => {
-    if (!data) {
+    if (!data || !data.data) {
       return [
-        { position: [-3, 1.2, 0], value: 120, label: 'Jan' },
-        { position: [-1, 1.5, 0], value: 150, label: 'Feb' },
-        { position: [1, 2.1, 0], value: 210, label: 'Mar' },
-        { position: [3, 2.8, 0], value: 280, label: 'Apr' },
+        { position: [-3, 1.2, 0], value: 45000, label: 'Jan' },
+        { position: [-1, 1.5, 0], value: 52000, label: 'Feb' },
+        { position: [1, 2.1, 0], value: 48000, label: 'Mar' },
+        { position: [3, 2.8, 0], value: 67000, label: 'Apr' },
       ];
     }
 
@@ -90,9 +90,10 @@ const Scene = ({ data }: { data: any }) => {
         <AnimatedBar
           key={index}
           position={point.position}
-          scale={[0.8, point.position[1], 0.8]}
+          scale={[0.8, point.position[1] * 2, 0.8]}
           color={colors[index % colors.length]}
           label={point.label}
+          value={point.value}
         />
       ))}
       
@@ -128,8 +129,11 @@ export const ThreeJSChart = ({ data }: ThreeJSChartProps) => {
     <div className="w-full">
       <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl overflow-hidden shadow-inner">
         <Suspense fallback={<LoadingFallback />}>
-          <div style={{ height: '400px' }}>
-            <Canvas camera={{ position: [0, 4, 8], fov: 60 }}>
+          <div style={{ height: '500px' }}>
+            <Canvas 
+              camera={{ position: [0, 4, 8], fov: 60 }}
+              shadows
+            >
               <Scene data={data} />
             </Canvas>
           </div>

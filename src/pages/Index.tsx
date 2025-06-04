@@ -5,10 +5,11 @@ import { FileUpload } from "@/components/FileUpload";
 import { ChartDisplay } from "@/components/ChartDisplay";
 import { UploadHistory } from "@/components/UploadHistory";
 import { ThreeJSChart } from "@/components/ThreeJSChart";
+import { AIInsights } from "@/components/AIInsights";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, BarChart3, FileSpreadsheet, Zap, Users, Download } from "lucide-react";
+import { TrendingUp, BarChart3, FileSpreadsheet, Zap, Users, Download, Brain, Sparkles } from "lucide-react";
 
 const Index = () => {
   const [uploadedData, setUploadedData] = useState(null);
@@ -17,31 +18,31 @@ const Index = () => {
   const features = [
     {
       icon: <FileSpreadsheet className="h-8 w-8 text-blue-600" />,
-      title: "Excel File Processing",
-      description: "Upload .xlsx and .xls files with instant parsing and analysis"
+      title: "Smart File Processing",
+      description: "Upload Excel files with instant parsing and intelligent data analysis"
     },
     {
       icon: <BarChart3 className="h-8 w-8 text-green-600" />,
-      title: "Interactive Charts",
-      description: "Generate beautiful 2D charts: Bar, Line, Pie, and Doughnut"
+      title: "Advanced Charts",
+      description: "Generate 7 types of interactive charts with download capabilities"
     },
     {
       icon: <TrendingUp className="h-8 w-8 text-purple-600" />,
       title: "3D Visualizations",
-      description: "Immersive 3D charts with rotate, zoom, and pan controls"
+      description: "Immersive 3D charts with real-time animations and controls"
     },
     {
-      icon: <Download className="h-8 w-8 text-orange-600" />,
-      title: "Export & Download",
-      description: "Download charts as PNG or PDF for presentations"
+      icon: <Brain className="h-8 w-8 text-pink-600" />,
+      title: "AI Analytics",
+      description: "Get intelligent insights, trends analysis, and recommendations"
     }
   ];
 
   const stats = [
     { label: "Files Processed", value: "1,234+", color: "text-blue-600" },
     { label: "Charts Generated", value: "5,678+", color: "text-green-600" },
-    { label: "Active Users", value: "892", color: "text-purple-600" },
-    { label: "Data Points Analyzed", value: "2.3M+", color: "text-orange-600" }
+    { label: "AI Reports", value: "892+", color: "text-purple-600" },
+    { label: "Data Points", value: "2.3M+", color: "text-pink-600" }
   ];
 
   return (
@@ -49,24 +50,26 @@ const Index = () => {
       <Navbar />
       
       <div className="container mx-auto px-6 py-8">
-        {/* Hero Section */}
+        {/* Enhanced Hero Section */}
         <div className="text-center mb-12">
-          <Badge className="mb-4 bg-blue-100 text-blue-800 border-blue-200">
-            <Zap className="w-4 h-4 mr-1" />
-            AI-Powered Analytics Platform
-          </Badge>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Transform Your Excel Data
+          <div className="flex justify-center mb-4">
+            <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-4 py-2">
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI-Powered Analytics Platform
+            </Badge>
+          </div>
+          <h1 className="text-6xl font-bold text-gray-900 mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Transform Excel Data into Insights
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Upload Excel files and create stunning interactive visualizations with our advanced analytics platform. 
-            Generate 2D/3D charts, get AI insights, and download professional reports in minutes.
+          <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
+            Upload Excel files and unlock the power of advanced analytics with AI-driven insights, 
+            interactive 2D/3D visualizations, and professional reports. Experience the future of data analysis.
           </p>
           
-          {/* Stats */}
+          {/* Enhanced Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
             {stats.map((stat, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+              <div key={index} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                 <div className={`text-3xl font-bold ${stat.color} mb-1`}>{stat.value}</div>
                 <div className="text-sm text-gray-600">{stat.label}</div>
               </div>
@@ -74,12 +77,14 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Features Grid */}
+        {/* Enhanced Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {features.map((feature, index) => (
-            <Card key={index} className="shadow-lg border-0 bg-white hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <Card key={index} className="shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group">
               <CardContent className="p-6 text-center">
-                <div className="mb-4 flex justify-center">{feature.icon}</div>
+                <div className="mb-4 flex justify-center group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
                 <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
                 <p className="text-sm text-gray-600">{feature.description}</p>
               </CardContent>
@@ -87,15 +92,15 @@ const Index = () => {
           ))}
         </div>
 
-        {/* Main Application Tabs */}
+        {/* Enhanced Main Application Tabs */}
         <Tabs defaultValue="upload" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4 bg-white shadow-lg rounded-xl p-2">
+          <TabsList className="grid w-full grid-cols-5 bg-white/90 backdrop-blur-sm shadow-xl rounded-xl p-2">
             <TabsTrigger 
               value="upload" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
             >
               <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Upload & Analyze
+              Upload
             </TabsTrigger>
             <TabsTrigger 
               value="charts" 
@@ -109,7 +114,14 @@ const Index = () => {
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
             >
               <TrendingUp className="w-4 h-4 mr-2" />
-              3D Visualization
+              3D Views
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ai" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-600 data-[state=active]:to-pink-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              AI Insights
             </TabsTrigger>
             <TabsTrigger 
               value="history" 
@@ -122,11 +134,11 @@ const Index = () => {
 
           <TabsContent value="upload" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <Card className="shadow-xl border-0 bg-white hover:shadow-2xl transition-shadow duration-300">
+              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-shadow duration-300">
                 <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-3 text-xl">
                     <FileSpreadsheet className="w-6 h-6" />
-                    Excel File Upload
+                    Smart Excel File Upload
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-8">
@@ -134,11 +146,11 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-xl border-0 bg-white hover:shadow-2xl transition-shadow duration-300">
+              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-shadow duration-300">
                 <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-3 text-xl">
                     <Zap className="w-6 h-6" />
-                    AI-Powered Insights
+                    Quick Analysis Preview
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-8">
@@ -146,39 +158,36 @@ const Index = () => {
                     <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
                       <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
                         <TrendingUp className="w-5 h-5" />
-                        Smart Analysis Engine
+                        Instant Data Intelligence
                       </h4>
                       <p className="text-green-700 text-sm mb-4">
-                        Our AI analyzes your data patterns, identifies trends, and provides actionable insights automatically.
+                        Advanced AI algorithms automatically process your data to extract meaningful patterns and insights.
                       </p>
                       <ul className="text-sm text-green-600 space-y-1">
-                        <li>• Automatic data validation</li>
-                        <li>• Trend detection & forecasting</li>
-                        <li>• Outlier identification</li>
-                        <li>• Statistical summaries</li>
+                        <li>• Real-time data validation & cleaning</li>
+                        <li>• Automatic trend detection</li>
+                        <li>• Statistical analysis & forecasting</li>
+                        <li>• Anomaly identification</li>
                       </ul>
                     </div>
-                    <button className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl">
-                      Generate AI Analysis Report
-                    </button>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {uploadedData && (
-              <Card className="shadow-xl border-0 bg-white">
+              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
                 <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-3">
                     <BarChart3 className="w-6 h-6" />
-                    Data Preview
+                    Data Preview & Summary
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-200 rounded-lg">
                       <thead>
-                        <tr className="bg-gray-50">
+                        <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
                           {uploadedData.headers.map((header: string, index: number) => (
                             <th key={index} className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">
                               {header}
@@ -188,7 +197,7 @@ const Index = () => {
                       </thead>
                       <tbody>
                         {uploadedData.data.slice(0, 5).map((row: any[], index: number) => (
-                          <tr key={index} className="hover:bg-gray-50 transition-colors">
+                          <tr key={index} className="hover:bg-blue-50 transition-colors">
                             {row.map((cell: any, cellIndex: number) => (
                               <td key={cellIndex} className="border border-gray-200 px-4 py-3 text-gray-600">
                                 {cell}
@@ -218,17 +227,21 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="3d" className="space-y-6">
-            <Card className="shadow-xl border-0 bg-white">
+            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3">
                   <TrendingUp className="w-6 h-6" />
-                  3D Interactive Visualization
+                  Interactive 3D Data Visualization
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-8">
                 <ThreeJSChart data={uploadedData} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-6">
+            <AIInsights data={uploadedData} />
           </TabsContent>
 
           <TabsContent value="history" className="space-y-6">
