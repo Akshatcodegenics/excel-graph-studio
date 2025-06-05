@@ -29,9 +29,10 @@ const Index = () => {
     setShowAuthModal(false);
     toast.success(`Welcome ${user.name}!`);
     
-    // Redirect admin users to admin panel
+    // Redirect admin users to admin panel (separate page)
     if (user.role === 'admin') {
-      setCurrentPage('admin');
+      window.location.href = '/admin';
+      return;
     }
   };
 
@@ -55,7 +56,7 @@ const Index = () => {
       case 'reports':
         return <Reports currentUser={currentUser} />;
       case 'admin':
-        // Redirect to separate admin page
+        // This should redirect to separate admin page
         window.location.href = '/admin';
         return null;
       default:

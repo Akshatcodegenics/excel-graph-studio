@@ -11,8 +11,7 @@ import {
   LogOut, 
   Menu, 
   X,
-  Shield,
-  ArrowLeft
+  Shield
 } from "lucide-react";
 
 interface AdminNavbarProps {
@@ -34,24 +33,11 @@ export const AdminNavbar = ({ currentUser, onLogout, currentSection, onNavigate 
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const handleBackToMain = () => {
-    window.location.href = '/';
-  };
-
   return (
     <nav className="bg-gradient-to-r from-red-600 to-red-700 shadow-lg border-b border-red-800 fixed top-0 w-full z-50">
       <div className="container mx-auto px-6">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              onClick={handleBackToMain}
-              className="text-white hover:bg-red-500/20"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Main
-            </Button>
-            
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-red-600" />
