@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, BarChart3, PieChart, LineChart, Download, Filter } from "lucide-react";
+import { TrendingUp, BarChart3, PieChart, LineChart, Download, Filter, FileSpreadsheet } from "lucide-react";
 
 interface AnalyticsProps {
   currentUser: any;
@@ -14,6 +13,7 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
   const [selectedPeriod, setSelectedPeriod] = useState("last30days");
   const [selectedChart, setSelectedChart] = useState("all");
 
+  // Only published files appear in analytics
   const analyticsData = [
     {
       id: 1,
@@ -23,7 +23,8 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
       views: 145,
       downloads: 23,
       insights: "Sales peaked in December with 34% growth",
-      performance: "excellent"
+      performance: "excellent",
+      isPublished: true
     },
     {
       id: 2,
@@ -33,26 +34,17 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
       views: 89,
       downloads: 12,
       insights: "Inventory turnover improved by 18%",
-      performance: "good"
-    },
-    {
-      id: 3,
-      fileName: "customer_segmentation.xlsx",
-      chartType: "Pie Chart",
-      createdDate: "2024-06-01",
-      views: 67,
-      downloads: 8,
-      insights: "Premium customers represent 42% of revenue",
-      performance: "average"
+      performance: "good",
+      isPublished: true
     }
-  ];
+  ].filter(item => item.isPublished); // Only show published files
 
   const performanceMetrics = {
-    totalCharts: 156,
-    totalViews: 2840,
-    totalDownloads: 456,
-    avgEngagement: "78%",
-    topPerformingChart: "Sales Dashboard Q4",
+    totalCharts: analyticsData.length * 2, // Simulate multiple charts per file
+    totalViews: analyticsData.reduce((sum, item) => sum + item.views, 0),
+    totalDownloads: analyticsData.reduce((sum, item) => sum + item.downloads, 0),
+    avgEngagement: analyticsData.length > 0 ? "78%" : "0%",
+    topPerformingChart: analyticsData.length > 0 ? "Sales Dashboard Q4" : "None",
     mostUsedChartType: "Bar Chart"
   };
 
@@ -86,16 +78,16 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
     <div className="container mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-        <p className="text-gray-600">Track your chart performance and data insights</p>
+        <p className="text-gray-600">Track performance of your published charts and data insights</p>
       </div>
 
-      {/* Performance Overview */}
+      {/* Performance Overview - Only from published files */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
         <Card className="shadow-lg border-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
           <CardContent className="p-4 text-center">
             <BarChart3 className="w-8 h-8 mx-auto mb-2" />
             <div className="text-2xl font-bold">{performanceMetrics.totalCharts}</div>
-            <div className="text-sm opacity-90">Total Charts</div>
+            <div className="text-sm opacity-90">Published Charts</div>
           </CardContent>
         </Card>
         
@@ -182,56 +174,68 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
         </CardContent>
       </Card>
 
-      {/* Analytics Table */}
+      {/* Analytics Table - Only published files */}
       <Card className="shadow-xl border-0 bg-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-6 h-6" />
-            Chart Performance Analytics
+            Published Chart Performance Analytics
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {analyticsData.map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center text-white">
-                    {getChartIcon(item.chartType)}
+          {analyticsData.length > 0 ? (
+            <div className="space-y-4">
+              {analyticsData.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center text-white">
+                      {getChartIcon(item.chartType)}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{item.fileName}</h3>
+                      <p className="text-sm text-gray-600">{item.chartType} • Created {item.createdDate}</p>
+                      <p className="text-xs text-blue-600 mt-1">{item.insights}</p>
+                      <Badge className="bg-green-100 text-green-800 mt-1">Published</Badge>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{item.fileName}</h3>
-                    <p className="text-sm text-gray-600">{item.chartType} • Created {item.createdDate}</p>
-                    <p className="text-xs text-blue-600 mt-1">{item.insights}</p>
+                  
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-gray-900">{item.views}</div>
+                      <div className="text-xs text-gray-500">Views</div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-gray-900">{item.downloads}</div>
+                      <div className="text-xs text-gray-500">Downloads</div>
+                    </div>
+                    
+                    <div className="text-center">
+                      {getPerformanceBadge(item.performance)}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" title="View Chart">
+                        <BarChart3 className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" title="Download">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{item.views}</div>
-                    <div className="text-xs text-gray-500">Views</div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{item.downloads}</div>
-                    <div className="text-xs text-gray-500">Downloads</div>
-                  </div>
-                  
-                  <div className="text-center">
-                    {getPerformanceBadge(item.performance)}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" title="View Chart">
-                      <BarChart3 className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" title="Download">
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <FileSpreadsheet className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Published Analytics</h3>
+              <p className="text-gray-600 mb-4">You need to publish Excel files to see analytics data here.</p>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                Go to Dashboard to Publish Files
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
