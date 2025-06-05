@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Users, 
   Search, 
@@ -14,7 +14,11 @@ import {
   CheckCircle, 
   AlertCircle,
   Download,
-  Filter
+  Filter,
+  FileSpreadsheet,
+  BarChart3,
+  Activity,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,6 +64,8 @@ export const AdminUsers = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isUserViewOpen, setIsUserViewOpen] = useState(false);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -83,7 +89,15 @@ export const AdminUsers = () => {
 
   const handleViewUser = (userId: number) => {
     const user = users.find(u => u.id === userId);
-    toast.info(`Viewing details for ${user?.name}`);
+    if (user) {
+      setSelectedUser(user);
+      setIsUserViewOpen(true);
+    }
+  };
+
+  const closeUserView = () => {
+    setIsUserViewOpen(false);
+    setSelectedUser(null);
   };
 
   const handleExportUsers = () => {
@@ -270,6 +284,140 @@ export const AdminUsers = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* User Detail View Dialog */}
+      <Dialog open={isUserViewOpen} onOpenChange={closeUserView}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-3">
+                <Users className="w-6 h-6 text-blue-600" />
+                User Details - {selectedUser?.name}
+              </DialogTitle>
+              <Button variant="ghost" size="sm" onClick={closeUserView}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+
+          {selectedUser && (
+            <div className="space-y-6">
+              {/* User Information */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                    {selectedUser.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{selectedUser.name}</h3>
+                    <p className="text-gray-600">{selectedUser.email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {selectedUser.status === 'active' ? 
+                        <CheckCircle className="w-4 h-4 text-green-500" /> :
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                      }
+                      <Badge variant={selectedUser.status === 'active' ? 'default' : 'destructive'}>
+                        {selectedUser.status}
+                      </Badge>
+                      <Badge variant="outline">{selectedUser.role}</Badge>
+                      <Badge variant="outline">{selectedUser.provider}</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Join Date</label>
+                    <p className="text-sm font-semibold">{new Date(selectedUser.joinDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Last Active</label>
+                    <p className="text-sm font-semibold">{new Date(selectedUser.lastActive).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Files Uploaded</label>
+                    <p className="text-sm font-semibold">{selectedUser.filesUploaded}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Charts Created</label>
+                    <p className="text-sm font-semibold">{selectedUser.chartsCreated}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4 text-center">
+                  <FileSpreadsheet className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-blue-600">{selectedUser.filesUploaded}</div>
+                  <div className="text-sm text-gray-600">Files Uploaded</div>
+                </div>
+                
+                <div className="bg-green-50 rounded-lg p-4 text-center">
+                  <BarChart3 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-green-600">{selectedUser.chartsCreated}</div>
+                  <div className="text-sm text-gray-600">Charts Created</div>
+                </div>
+                
+                <div className="bg-purple-50 rounded-lg p-4 text-center">
+                  <Activity className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-purple-600">
+                    {Math.floor(Math.random() * 50) + 10}
+                  </div>
+                  <div className="text-sm text-gray-600">Total Actions</div>
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="border rounded-lg">
+                <div className="bg-gray-100 px-4 py-2 border-b">
+                  <h3 className="font-semibold">Recent Activity</h3>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-3 p-2 bg-blue-50 rounded">
+                    <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm">Uploaded sales_data_q1.xlsx</span>
+                    <span className="text-xs text-gray-500 ml-auto">2 hours ago</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-2 bg-green-50 rounded">
+                    <BarChart3 className="w-4 h-4 text-green-600" />
+                    <span className="text-sm">Created bar chart visualization</span>
+                    <span className="text-xs text-gray-500 ml-auto">4 hours ago</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-2 bg-purple-50 rounded">
+                    <Download className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm">Downloaded revenue_report.xlsx</span>
+                    <span className="text-xs text-gray-500 ml-auto">1 day ago</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={closeUserView}>
+                  Close
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleBanUser(selectedUser.id)}
+                  className={selectedUser.status === "banned" ? "hover:bg-green-50" : "hover:bg-yellow-50"}
+                >
+                  <Ban className="w-4 h-4 mr-2" />
+                  {selectedUser.status === "banned" ? "Unban User" : "Ban User"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleDeleteUser(selectedUser.id)}
+                  className="text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete User
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

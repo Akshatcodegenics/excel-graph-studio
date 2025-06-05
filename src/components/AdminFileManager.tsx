@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { FileSpreadsheet, Download, Trash2, Eye, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
+import { FileViewer } from "./FileViewer";
+import { useFileViewer } from "@/hooks/useFileViewer";
 
 export const AdminFileManager = () => {
   const [files, setFiles] = useState([
@@ -54,6 +55,8 @@ export const AdminFileManager = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const { isViewerOpen, selectedFile, openFileViewer, closeFileViewer } = useFileViewer();
+
   const handleDeleteFile = (fileId: number) => {
     setFiles(files.filter(file => file.id !== fileId));
     toast.success("File deleted successfully");
@@ -64,7 +67,7 @@ export const AdminFileManager = () => {
   };
 
   const handleViewFile = (file: any) => {
-    toast.info(`Opening ${file.fileName} for preview`);
+    openFileViewer(file);
   };
 
   const getTotalStorage = () => {
@@ -232,6 +235,12 @@ export const AdminFileManager = () => {
           )}
         </CardContent>
       </Card>
+
+      <FileViewer 
+        isOpen={isViewerOpen}
+        onClose={closeFileViewer}
+        file={selectedFile}
+      />
     </div>
   );
 };

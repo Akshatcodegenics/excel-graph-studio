@@ -21,6 +21,8 @@ import {
   Zap
 } from "lucide-react";
 import { toast } from "sonner";
+import { FileViewer } from "./FileViewer";
+import { useFileViewer } from "@/hooks/useFileViewer";
 
 interface AdminPanelProps {
   currentUser: any;
@@ -117,6 +119,8 @@ export const AdminPanel = ({ currentUser }: AdminPanelProps) => {
     errorRate: "0.02%"
   });
 
+  const { isViewerOpen, selectedFile, openFileViewer, closeFileViewer } = useFileViewer();
+
   if (currentUser?.role !== 'admin') {
     return (
       <div className="container mx-auto px-6 py-8">
@@ -136,7 +140,14 @@ export const AdminPanel = ({ currentUser }: AdminPanelProps) => {
   };
 
   const handleFileAction = (action: string, fileId: number) => {
-    toast.success(`${action} action performed for file ID: ${fileId}`);
+    if (action === 'View') {
+      const file = uploads.find(u => u.id === fileId);
+      if (file) {
+        openFileViewer(file);
+      }
+    } else {
+      toast.success(`${action} action performed for file ID: ${fileId}`);
+    }
   };
 
   return (
@@ -492,6 +503,12 @@ export const AdminPanel = ({ currentUser }: AdminPanelProps) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <FileViewer 
+        isOpen={isViewerOpen}
+        onClose={closeFileViewer}
+        file={selectedFile}
+      />
     </div>
   );
 };

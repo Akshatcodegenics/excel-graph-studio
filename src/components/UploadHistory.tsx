@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { FileSpreadsheet, Calendar, Download, BarChart3, Eye, Trash2, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { FileViewer } from "./FileViewer";
+import { useFileViewer } from "@/hooks/useFileViewer";
 
 interface HistoryItem {
   id: string;
@@ -70,9 +71,19 @@ export const UploadHistory = () => {
     item.userName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const { isViewerOpen, selectedFile, openFileViewer, closeFileViewer } = useFileViewer();
+
   const handleView = (item: HistoryItem) => {
-    toast.success(`Opening ${item.fileName} for preview`);
-    // Simulate opening file for preview
+    openFileViewer({
+      id: item.id,
+      fileName: item.fileName,
+      userName: item.userName,
+      uploadDate: item.uploadDate,
+      fileSize: item.fileSize,
+      status: item.status,
+      chartTypes: item.chartTypes,
+      downloadCount: item.downloadCount
+    });
   };
 
   const handleDownload = (item: HistoryItem) => {
@@ -342,6 +353,12 @@ export const UploadHistory = () => {
           </div>
         </CardContent>
       </Card>
+
+      <FileViewer 
+        isOpen={isViewerOpen}
+        onClose={closeFileViewer}
+        file={selectedFile}
+      />
     </div>
   );
 };
