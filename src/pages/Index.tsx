@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { AuthModal } from "@/components/AuthModal";
@@ -29,6 +28,11 @@ const Index = () => {
     setCurrentUser(user);
     setShowAuthModal(false);
     toast.success(`Welcome ${user.name}!`);
+    
+    // Redirect admin users to admin panel
+    if (user.role === 'admin') {
+      setCurrentPage('admin');
+    }
   };
 
   const handleLogout = () => {
@@ -51,7 +55,9 @@ const Index = () => {
       case 'reports':
         return <Reports currentUser={currentUser} />;
       case 'admin':
-        return <AdminPanel currentUser={currentUser} />;
+        // Redirect to separate admin page
+        window.location.href = '/admin';
+        return null;
       default:
         return renderUploadPage();
     }

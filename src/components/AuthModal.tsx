@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { GoogleAuth } from "./GoogleAuth";
 import { toast } from "sonner";
 
 interface AuthModalProps {
@@ -27,7 +28,6 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
     setTimeout(() => {
       if (loginData.email === "admin@admin.com" && loginData.password === "admin") {
         const user = {
@@ -35,7 +35,8 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
           name: "Admin User",
           email: loginData.email,
           role: "admin",
-          joinDate: "2024-01-01"
+          joinDate: "2024-01-01",
+          provider: "email"
         };
         onAuthSuccess(user);
         toast.success("Admin login successful!");
@@ -45,7 +46,8 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
           name: "John Doe",
           email: loginData.email,
           role: "user",
-          joinDate: "2024-06-01"
+          joinDate: "2024-06-01",
+          provider: "email"
         };
         onAuthSuccess(user);
         toast.success("Login successful!");
@@ -66,14 +68,14 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     
     setIsLoading(true);
     
-    // Simulate API call
     setTimeout(() => {
       const user = {
         id: Date.now(),
         name: signupData.name,
         email: signupData.email,
         role: "user",
-        joinDate: new Date().toISOString().split('T')[0]
+        joinDate: new Date().toISOString().split('T')[0],
+        provider: "email"
       };
       onAuthSuccess(user);
       toast.success("Account created successfully!");
@@ -82,102 +84,123 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     }, 1000);
   };
 
+  const handleGoogleAuthSuccess = (user: any) => {
+    onAuthSuccess(user);
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Authentication</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Welcome to Excel Analytics
+          </DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
+        
+        <div className="space-y-6">
+          <GoogleAuth onAuthSuccess={handleGoogleAuthSuccess} />
           
-          <TabsContent value="login">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={loginData.email}
-                  onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={loginData.password}
-                  onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-              <p className="text-sm text-gray-600 text-center">
-                Demo: admin@admin.com / admin for admin access
-              </p>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="signup">
-            <form onSubmit={handleSignup} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={signupData.name}
-                  onChange={(e) => setSignupData({...signupData, name: e.target.value})}
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  value={signupData.email}
-                  onChange={(e) => setSignupData({...signupData, email: e.target.value})}
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  value={signupData.password}
-                  onChange={(e) => setSignupData({...signupData, password: e.target.value})}
-                  placeholder="Create a password"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={signupData.confirmPassword}
-                  onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
-                  placeholder="Confirm your password"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating Account..." : "Sign Up"}
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+            </div>
+          </div>
+
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={loginData.email}
+                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Logging in..." : "Login"}
+                </Button>
+                <p className="text-sm text-gray-600 text-center">
+                  Demo: admin@admin.com / admin for admin access
+                </p>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={signupData.name}
+                    onChange={(e) => setSignupData({...signupData, name: e.target.value})}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    value={signupData.email}
+                    onChange={(e) => setSignupData({...signupData, email: e.target.value})}
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    value={signupData.password}
+                    onChange={(e) => setSignupData({...signupData, password: e.target.value})}
+                    placeholder="Create a password"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={signupData.confirmPassword}
+                    onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
+                    placeholder="Confirm your password"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Creating Account..." : "Sign Up"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
