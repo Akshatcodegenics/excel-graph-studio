@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,10 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     onOpenChange(false);
   };
 
+  const handleGoogleAuthError = (error: string) => {
+    toast.error(error);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -99,7 +104,10 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
         </DialogHeader>
         
         <div className="space-y-6">
-          <GoogleAuth onAuthSuccess={handleGoogleAuthSuccess} />
+          <GoogleAuth 
+            onAuthSuccess={handleGoogleAuthSuccess} 
+            onError={handleGoogleAuthError}
+          />
           
           <div className="relative">
             <div className="absolute inset-0 flex items-center">

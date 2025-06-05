@@ -37,8 +37,23 @@ const Index = () => {
   };
 
   const handleLogout = () => {
+    // Clear user session
     setCurrentUser(null);
     setCurrentPage("upload");
+    
+    // If user was authenticated via Google, perform Google sign out
+    if (currentUser?.provider === 'google') {
+      // Create invisible iframe to sign out from Google
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = 'https://accounts.google.com/logout';
+      document.body.appendChild(iframe);
+      
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }
+    
     toast.success("Logged out successfully");
   };
 
