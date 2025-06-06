@@ -1,8 +1,9 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileSpreadsheet, TrendingUp, BarChart3, Users, Clock, Eye, Download, Trash2, EyeOff } from "lucide-react";
+import { FileSpreadsheet, TrendingUp, BarChart3, Users, Clock, Eye, Download, Trash2, EyeOff, Upload } from "lucide-react";
 import { FileUpload } from "@/components/FileUpload";
 import { QuickAnalysisPreview } from "@/components/QuickAnalysisPreview";
 import { FileViewer } from "@/components/FileViewer";
