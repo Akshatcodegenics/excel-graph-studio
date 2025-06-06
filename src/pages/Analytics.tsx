@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, BarChart3, PieChart, LineChart, Download, Filter, FileSpreadsheet } from "lucide-react";
+import { toast } from "sonner";
+import { FileViewer } from "@/components/FileViewer";
+import { useFileViewer } from "@/hooks/useFileViewer";
 
 interface AnalyticsProps {
   currentUser: any;
@@ -12,6 +15,8 @@ interface AnalyticsProps {
 const Analytics = ({ currentUser }: AnalyticsProps) => {
   const [selectedPeriod, setSelectedPeriod] = useState("last30days");
   const [selectedChart, setSelectedChart] = useState("all");
+
+  const { isViewerOpen, selectedFile, openFileViewer, closeFileViewer } = useFileViewer();
 
   // Only published files appear in analytics
   const analyticsData = [
@@ -73,6 +78,26 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
         return <BarChart3 className="w-4 h-4" />;
     }
   };
+
+  const handleViewChart = (item: any) => {
+    openFileViewer(item);
+    toast.success(`Viewing chart for ${item.fileName}`);
+  };
+
+  const handleDownloadChart = (item: any) => {
+    console.log(`Downloading chart for: ${item.fileName}`);
+    toast.success(`Downloaded chart from ${item.fileName}`);
+  };
+
+  const handleExportReport = () => {
+    console.log(`Exporting analytics report for period: ${selectedPeriod}, chart type: ${selectedChart}`);
+    toast.success("Analytics report exported successfully!");
+  };
+
+  const filteredAnalyticsData = analyticsData.filter(item => {
+    if (selectedChart === "all") return true;
+    return item.chartType.toLowerCase().includes(selectedChart);
+  });
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -166,7 +191,7 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
               </div>
             </div>
             
-            <Button variant="outline" className="ml-auto">
+            <Button variant="outline" className="ml-auto" onClick={handleExportReport}>
               <Download className="w-4 h-4 mr-2" />
               Export Report
             </Button>
@@ -183,9 +208,9 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {analyticsData.length > 0 ? (
+          {filteredAnalyticsData.length > 0 ? (
             <div className="space-y-4">
-              {analyticsData.map((item) => (
+              {filteredAnalyticsData.map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center text-white">
@@ -215,10 +240,20 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" title="View Chart">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleViewChart(item)}
+                        title="View Chart"
+                      >
                         <BarChart3 className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline" title="Download">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleDownloadChart(item)}
+                        title="Download Chart"
+                      >
                         <Download className="w-4 h-4" />
                       </Button>
                     </div>
@@ -238,6 +273,12 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
           )}
         </CardContent>
       </Card>
+
+      <FileViewer 
+        isOpen={isViewerOpen}
+        onClose={closeFileViewer}
+        file={selectedFile}
+      />
     </div>
   );
 };

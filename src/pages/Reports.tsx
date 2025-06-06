@@ -4,12 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Download, Calendar, TrendingUp, BarChart3, Brain, Filter, FileSpreadsheet } from "lucide-react";
+import { toast } from "sonner";
+import { FileViewer } from "@/components/FileViewer";
+import { useFileViewer } from "@/hooks/useFileViewer";
 
 interface ReportsProps {
   currentUser: any;
 }
 
 const Reports = ({ currentUser }: ReportsProps) => {
+  const { isViewerOpen, selectedFile, openFileViewer, closeFileViewer } = useFileViewer();
+
   // Only reports from published files
   const [reports] = useState([
     {
@@ -49,10 +54,37 @@ const Reports = ({ currentUser }: ReportsProps) => {
 
   const generateAIReport = async (fileName: string) => {
     console.log(`Generating AI report for ${fileName}...`);
+    toast.success(`AI report generation started for ${fileName}`);
   };
 
   const downloadReport = (reportId: number) => {
-    console.log(`Downloading report ${reportId}...`);
+    const report = reports.find(r => r.id === reportId);
+    if (report) {
+      console.log(`Downloading report: ${report.title}`);
+      toast.success(`Downloaded ${report.title}`);
+    }
+  };
+
+  const viewReport = (report: any) => {
+    openFileViewer({
+      id: report.id,
+      fileName: report.fileName,
+      uploadDate: report.generatedDate,
+      status: report.status,
+      chartTypes: [report.type],
+      chartsGenerated: report.insights,
+      downloadCount: report.downloadCount
+    });
+  };
+
+  const createCustomReport = () => {
+    console.log("Creating custom report...");
+    toast.success("Custom report creation started");
+  };
+
+  const createAIReport = () => {
+    console.log("Creating AI-powered report...");
+    toast.success("AI report generation started");
   };
 
   const getStatusBadge = (status: string) => {
@@ -200,6 +232,14 @@ const Reports = ({ currentUser }: ReportsProps) => {
                           <Button 
                             size="sm" 
                             variant="outline" 
+                            onClick={() => viewReport(report)}
+                            title="View Report"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
                             onClick={() => downloadReport(report.id)}
                             disabled={report.status !== 'completed'}
                             title="Download Report"
@@ -257,7 +297,20 @@ const Reports = ({ currentUser }: ReportsProps) => {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => viewReport(report)}
+                            className="bg-purple-50 hover:bg-purple-100"
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-purple-600 hover:bg-purple-700"
+                            onClick={() => downloadReport(report.id)}
+                          >
                             <Download className="w-4 h-4 mr-2" />
                             Download
                           </Button>
@@ -294,7 +347,10 @@ const Reports = ({ currentUser }: ReportsProps) => {
                     <p className="text-gray-600 text-sm mb-4">
                       Let AI analyze your published data and generate comprehensive insights automatically
                     </p>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={createAIReport}
+                    >
                       Generate AI Report
                     </Button>
                   </CardContent>
@@ -307,7 +363,10 @@ const Reports = ({ currentUser }: ReportsProps) => {
                     <p className="text-gray-600 text-sm mb-4">
                       Create a manual report with specific charts and data visualizations from published files
                     </p>
-                    <Button className="bg-green-600 hover:bg-green-700">
+                    <Button 
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={createCustomReport}
+                    >
                       Create Custom Report
                     </Button>
                   </CardContent>
@@ -335,6 +394,12 @@ const Reports = ({ currentUser }: ReportsProps) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <FileViewer 
+        isOpen={isViewerOpen}
+        onClose={closeFileViewer}
+        file={selectedFile}
+      />
     </div>
   );
 };

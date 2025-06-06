@@ -1,9 +1,11 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, FileSpreadsheet, TrendingUp, Clock, Download, Eye, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { FileViewer } from "@/components/FileViewer";
+import { useFileViewer } from "@/hooks/useFileViewer";
 
 interface DashboardProps {
   currentUser: any;
@@ -60,6 +62,8 @@ const Dashboard = ({ currentUser }: DashboardProps) => {
   // Filter only published files for analytics
   const publishedFiles = recentUploads.filter(upload => upload.isPublished);
 
+  const { isViewerOpen, selectedFile, openFileViewer, closeFileViewer } = useFileViewer();
+
   useEffect(() => {
     // Calculate stats only from published files
     setTimeout(() => {
@@ -91,6 +95,15 @@ const Dashboard = ({ currentUser }: DashboardProps) => {
           : upload
       )
     );
+  };
+
+  const handleViewFile = (file: any) => {
+    openFileViewer(file);
+  };
+
+  const handleDownloadFile = (file: any) => {
+    console.log(`Downloading file: ${file.fileName}`);
+    toast.success(`Downloaded ${file.fileName}`);
   };
 
   return (
@@ -204,7 +217,12 @@ const Dashboard = ({ currentUser }: DashboardProps) => {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" title="View Details">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleViewFile(upload)}
+                      title="View File Details"
+                    >
                       <Eye className="w-4 h-4" />
                     </Button>
                     {upload.status === 'processed' && (
@@ -230,7 +248,12 @@ const Dashboard = ({ currentUser }: DashboardProps) => {
                         </Button>
                       )
                     )}
-                    <Button size="sm" variant="outline" title="Download Report">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleDownloadFile(upload)}
+                      title="Download File"
+                    >
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>
@@ -275,6 +298,12 @@ const Dashboard = ({ currentUser }: DashboardProps) => {
           </CardContent>
         </Card>
       </div>
+
+      <FileViewer 
+        isOpen={isViewerOpen}
+        onClose={closeFileViewer}
+        file={selectedFile}
+      />
     </div>
   );
 };
