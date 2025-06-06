@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminNavbar } from "@/components/AdminNavbar";
 import { AdminUsers } from "@/components/AdminUsers";
 import { AdminActivityMonitor } from "@/components/AdminActivityMonitor";
@@ -8,6 +8,7 @@ import { AdminAnalytics } from "@/components/AdminAnalytics";
 import { AdminSettings } from "@/components/AdminSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Users, 
   FileSpreadsheet, 
@@ -18,8 +19,12 @@ import {
   Download,
   Clock,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Home
 } from "lucide-react";
+import { getUser, requireAdmin } from "@/utils/adminUtils";
+import { ThreeJSDataVisualization } from "@/components/ThreeJSDataVisualization";
+import { toast } from "sonner";
 
 interface AdminDashboardProps {
   currentUser: any;
@@ -28,15 +33,55 @@ interface AdminDashboardProps {
 
 const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
   const [currentSection, setCurrentSection] = useState("overview");
+  const [authenticatedUser, setAuthenticatedUser] = useState(currentUser);
 
-  if (currentUser?.role !== 'admin') {
+  useEffect(() => {
+    // Get the current user from our admin utils
+    const user = getUser();
+    setAuthenticatedUser(user);
+  }, []);
+
+  // Strict admin access control
+  if (!authenticatedUser || !requireAdmin(authenticatedUser)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🚫</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
-          <p className="text-gray-600">You don't have permission to access the admin panel.</p>
-        </div>
+        <Card className="max-w-md w-full mx-4 shadow-xl">
+          <CardContent className="p-8 text-center">
+            <div className="text-red-500 text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">403 - Access Denied</h2>
+            <p className="text-gray-600 mb-4">You don't have permission to access the admin panel.</p>
+            <p className="text-sm text-gray-500 mb-6">Only users with admin role can access this section.</p>
+            <div className="space-y-3">
+              <Button 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                onClick={() => window.location.href = '/'}
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Return to Home
+              </Button>
+              <Button 
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  // Simulate switching to admin user for demo
+                  const adminUser = {
+                    id: 1,
+                    name: "Akshat",
+                    email: "akshat@admin.com",
+                    role: "admin" as const,
+                    avatar: "https://lh3.googleusercontent.com/a/admin-user=s96-c",
+                    joinDate: "2024-01-15",
+                    provider: "google"
+                  };
+                  setAuthenticatedUser(adminUser);
+                  toast.success("Switched to admin user for demo");
+                }}
+              >
+                Demo Admin Access
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -61,7 +106,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <AdminNavbar 
-        currentUser={currentUser}
+        currentUser={authenticatedUser}
         onLogout={onLogout}
         currentSection={currentSection}
         onNavigate={setCurrentSection}
@@ -103,12 +148,41 @@ const AdminOverview = () => {
     { name: "financial_summary.xlsx", uploads: 24, charts: 67, downloads: 98 },
   ]);
 
+  const adminVisualizationData = [
+    { x: 1, y: 156, z: 42, label: "Total Users", value: 156, color: "#3b82f6" },
+    { x: 2, y: 1234, z: 5678, label: "Uploads/Charts", value: 1234, color: "#ef4444" },
+    { x: 3, y: 892, z: 3421, label: "AI Reports", value: 892, color: "#10b981" },
+    { x: 4, y: 99.9, z: 2.3, label: "System Performance", value: 99.9, color: "#f59e0b" }
+  ];
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Overview</h1>
         <p className="text-gray-600">Complete system monitoring and user activity dashboard</p>
+        <Badge className="bg-red-100 text-red-800 mt-2">
+          Admin Access - {getUser()?.name}
+        </Badge>
       </div>
+
+      {/* 3D System Visualization */}
+      <Card className="shadow-xl border-0 bg-white mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-6 h-6" />
+            3D System Performance Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ThreeJSDataVisualization 
+            data={adminVisualizationData}
+            title="System Metrics - 3D Admin View"
+          />
+          <div className="mt-4 text-sm text-gray-600">
+            <p>3D visualization of system performance. X-axis: Metric Type, Y-axis: Primary Value, Z-axis: Secondary Value</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Enhanced System Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">

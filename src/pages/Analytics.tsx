@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,8 @@ import { TrendingUp, BarChart3, PieChart, LineChart, Download, Filter, FileSprea
 import { toast } from "sonner";
 import { FileViewer } from "@/components/FileViewer";
 import { useFileViewer } from "@/hooks/useFileViewer";
+import { ThreeJSDataVisualization } from "@/components/ThreeJSDataVisualization";
+import { downloadFile, exportAnalyticsReport } from "@/utils/downloadUtils";
 
 interface AnalyticsProps {
   currentUser: any;
@@ -42,10 +45,10 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
       performance: "good",
       isPublished: true
     }
-  ].filter(item => item.isPublished); // Only show published files
+  ].filter(item => item.isPublished);
 
   const performanceMetrics = {
-    totalCharts: analyticsData.length * 2, // Simulate multiple charts per file
+    totalCharts: analyticsData.length * 2,
     totalViews: analyticsData.reduce((sum, item) => sum + item.views, 0),
     totalDownloads: analyticsData.reduce((sum, item) => sum + item.downloads, 0),
     avgEngagement: analyticsData.length > 0 ? "78%" : "0%",
@@ -85,13 +88,11 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
   };
 
   const handleDownloadChart = (item: any) => {
-    console.log(`Downloading chart for: ${item.fileName}`);
-    toast.success(`Downloaded chart from ${item.fileName}`);
+    downloadFile(item.fileName, undefined, 'chart');
   };
 
   const handleExportReport = () => {
-    console.log(`Exporting analytics report for period: ${selectedPeriod}, chart type: ${selectedChart}`);
-    toast.success("Analytics report exported successfully!");
+    exportAnalyticsReport(selectedPeriod, selectedChart);
   };
 
   const filteredAnalyticsData = analyticsData.filter(item => {
@@ -99,12 +100,38 @@ const Analytics = ({ currentUser }: AnalyticsProps) => {
     return item.chartType.toLowerCase().includes(selectedChart);
   });
 
+  const analyticsVisualizationData = [
+    { x: 1, y: 145, z: 23, label: "Sales Q4", value: 145, color: "#3b82f6" },
+    { x: 2, y: 89, z: 12, label: "Inventory", value: 89, color: "#ef4444" },
+    { x: 3, y: 120, z: 18, label: "Marketing", value: 120, color: "#10b981" },
+    { x: 4, y: 200, z: 35, label: "Operations", value: 200, color: "#f59e0b" }
+  ];
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
         <p className="text-gray-600">Track performance of your published charts and data insights</p>
       </div>
+
+      {/* 3D Analytics Visualization */}
+      <Card className="shadow-xl border-0 bg-white mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-6 h-6" />
+            3D Performance Analytics
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ThreeJSDataVisualization 
+            data={analyticsVisualizationData}
+            title="Published Chart Performance - 3D Analytics View"
+          />
+          <div className="mt-4 text-sm text-gray-600">
+            <p>3D representation of chart performance metrics. X-axis: Time Period, Y-axis: Views, Z-axis: Downloads</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Performance Overview - Only from published files */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">

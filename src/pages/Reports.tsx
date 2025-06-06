@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,8 @@ import { FileText, Download, Calendar, TrendingUp, BarChart3, Brain, Filter, Fil
 import { toast } from "sonner";
 import { FileViewer } from "@/components/FileViewer";
 import { useFileViewer } from "@/hooks/useFileViewer";
+import { ThreeJSDataVisualization } from "@/components/ThreeJSDataVisualization";
+import { downloadFile } from "@/utils/downloadUtils";
 
 interface ReportsProps {
   currentUser: any;
@@ -41,7 +44,7 @@ const Reports = ({ currentUser }: ReportsProps) => {
       isPublished: true,
       summary: "Inventory turnover improved by 18%. Recommendations include reducing slow-moving stock and increasing fast-moving inventory."
     }
-  ].filter(report => report.isPublished)); // Only show reports from published files
+  ].filter(report => report.isPublished));
 
   const [summaryStats] = useState({
     totalReports: reports.length,
@@ -55,13 +58,17 @@ const Reports = ({ currentUser }: ReportsProps) => {
   const generateAIReport = async (fileName: string) => {
     console.log(`Generating AI report for ${fileName}...`);
     toast.success(`AI report generation started for ${fileName}`);
+    
+    // Simulate AI processing
+    setTimeout(() => {
+      toast.success(`AI report for ${fileName} is ready for download!`);
+    }, 2000);
   };
 
   const downloadReport = (reportId: number) => {
     const report = reports.find(r => r.id === reportId);
     if (report) {
-      console.log(`Downloading report: ${report.title}`);
-      toast.success(`Downloaded ${report.title}`);
+      downloadFile(report.fileName, undefined, 'report');
     }
   };
 
@@ -80,11 +87,29 @@ const Reports = ({ currentUser }: ReportsProps) => {
   const createCustomReport = () => {
     console.log("Creating custom report...");
     toast.success("Custom report creation started");
+    
+    // Simulate report creation process
+    setTimeout(() => {
+      toast.success("Custom report created successfully! Ready for download.");
+    }, 3000);
   };
 
   const createAIReport = () => {
     console.log("Creating AI-powered report...");
     toast.success("AI report generation started");
+    
+    // Simulate AI processing with multiple steps
+    setTimeout(() => {
+      toast.info("Analyzing published data...");
+    }, 1000);
+    
+    setTimeout(() => {
+      toast.info("Generating insights...");
+    }, 2500);
+    
+    setTimeout(() => {
+      toast.success("AI report generated successfully! Ready for download.");
+    }, 4000);
   };
 
   const getStatusBadge = (status: string) => {
@@ -104,12 +129,41 @@ const Reports = ({ currentUser }: ReportsProps) => {
     return type === 'AI Generated' ? <Brain className="w-4 h-4" /> : <FileText className="w-4 h-4" />;
   };
 
+  const sampleData = [
+    { x: 2, y: 3, z: 1, label: "Q1 Sales", value: 150, color: "#3b82f6" },
+    { x: -1, y: 2, z: 3, label: "Q2 Sales", value: 200, color: "#ef4444" },
+    { x: 3, y: -2, z: 2, label: "Q3 Sales", value: 175, color: "#10b981" },
+    { x: -2, y: -1, z: -1, label: "Q4 Sales", value: 225, color: "#f59e0b" },
+    { x: 1, y: 4, z: -2, label: "Marketing ROI", value: 100, color: "#8b5cf6" },
+    { x: -3, y: 1, z: 2, label: "Customer Satisfaction", value: 125, color: "#06b6d4" }
+  ];
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Reports Center</h1>
         <p className="text-gray-600">Generate, manage, and download reports from published Excel files</p>
       </div>
+
+      {/* 3D Data Visualization */}
+      <Card className="shadow-xl border-0 bg-white mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-6 h-6" />
+            3D Data Visualization from Published Files
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ThreeJSDataVisualization 
+            data={sampleData}
+            title="Published Data Analytics - 3D View"
+          />
+          <div className="mt-4 text-sm text-gray-600">
+            <p>Interactive 3D visualization of your published data. Click and drag to rotate, scroll to zoom, use Reset View to return to default position.</p>
+            <p className="mt-2">Data points represent: X-axis (Time), Y-axis (Performance), Z-axis (Growth Rate)</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary Stats - Only from published files */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">

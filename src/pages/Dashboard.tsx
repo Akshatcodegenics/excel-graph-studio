@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart3, FileSpreadsheet, TrendingUp, Clock, Download, Eye, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { FileSpreadsheet, TrendingUp, BarChart3, Users, Clock, Eye, Download, Trash2, EyeOff } from "lucide-react";
+import { FileUpload } from "@/components/FileUpload";
+import { QuickAnalysisPreview } from "@/components/QuickAnalysisPreview";
 import { FileViewer } from "@/components/FileViewer";
 import { useFileViewer } from "@/hooks/useFileViewer";
+import { toast } from "sonner";
+import { downloadFile } from "@/utils/downloadUtils";
 
 interface DashboardProps {
   currentUser: any;
@@ -104,6 +107,7 @@ const Dashboard = ({ currentUser }: DashboardProps) => {
   const handleDownloadFile = (file: any) => {
     console.log(`Downloading file: ${file.fileName}`);
     toast.success(`Downloaded ${file.fileName}`);
+    downloadFile(file);
   };
 
   return (
