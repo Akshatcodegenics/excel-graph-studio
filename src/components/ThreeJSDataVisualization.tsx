@@ -1,10 +1,10 @@
 
-import { useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Text } from '@react-three/drei';
+import React, { useRef, useMemo, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Text, Box } from '@react-three/drei';
+import * as THREE from 'three';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
-import * as THREE from 'three';
 
 interface DataPoint {
   x: number;
@@ -16,31 +16,36 @@ interface DataPoint {
 }
 
 interface ThreeJSDataVisualizationProps {
-  data?: DataPoint[];
-  title?: string;
+  data: DataPoint[];
+  title: string;
 }
 
-const DataSphere = ({ position, color, scale, label, value }: any) => {
+const DataSphere = ({ point, index }: { point: DataPoint; index: number }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.x += 0.01;
-      meshRef.current.rotation.y += 0.01;
+      meshRef.current.rotation.x = state.clock.elapsedTime * 0.5;
+      meshRef.current.rotation.y = state.clock.elapsedTime * 0.3;
     }
   });
 
+  const scale = useMemo(() => {
+    const baseScale = Math.max(point.value / 1000, 0.1);
+    return Math.min(baseScale, 2);
+  }, [point.value]);
+
   return (
-    <group position={position}>
+    <group position={[point.x, point.y / 100, point.z / 100]}>
       <mesh
         ref={meshRef}
         scale={hovered ? scale * 1.2 : scale}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
       >
-        <sphereGeometry args={[0.5, 32, 32]} />
-        <meshStandardMaterial color={color} />
+        <sphereGeometry args={[0.5, 16, 16]} />
+        <meshStandardMaterial color={point.color} />
       </mesh>
       {hovered && (
         <Text
@@ -50,7 +55,7 @@ const DataSphere = ({ position, color, scale, label, value }: any) => {
           anchorX="center"
           anchorY="middle"
         >
-          {`${label}: ${value}`}
+          {`${point.label}: ${point.value}`}
         </Text>
       )}
     </group>
@@ -58,133 +63,157 @@ const DataSphere = ({ position, color, scale, label, value }: any) => {
 };
 
 const AxisLines = () => {
+  const points = useMemo(() => [
+    // X-axis
+    new THREE.Vector3(-5, 0, 0),
+    new THREE.Vector3(5, 0, 0),
+    // Y-axis  
+    new THREE.Vector3(0, -5, 0),
+    new THREE.Vector3(0, 5, 0),
+    // Z-axis
+    new THREE.Vector3(0, 0, -5),
+    new THREE.Vector3(0, 0, 5),
+  ], []);
+
+  const xAxisGeometry = useMemo(() => {
+    const geometry = new THREE.BufferGeometry().setFromPoints([points[0], points[1]]);
+    return geometry;
+  }, [points]);
+
+  const yAxisGeometry = useMemo(() => {
+    const geometry = new THREE.BufferGeometry().setFromPoints([points[2], points[3]]);
+    return geometry;
+  }, [points]);
+
+  const zAxisGeometry = useMemo(() => {
+    const geometry = new THREE.BufferGeometry().setFromPoints([points[4], points[5]]);
+    return geometry;
+  }, [points]);
+
   return (
     <group>
-      {/* X Axis - Red */}
-      <line>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            array={new Float32Array([-5, 0, 0, 5, 0, 0])}
-            count={2}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial color="red" />
+      <line geometry={xAxisGeometry}>
+        <lineBasicMaterial color="red" linewidth={2} />
       </line>
-      {/* Y Axis - Green */}
-      <line>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            array={new Float32Array([0, -5, 0, 0, 5, 0])}
-            count={2}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial color="green" />
+      <line geometry={yAxisGeometry}>
+        <lineBasicMaterial color="green" linewidth={2} />
       </line>
-      {/* Z Axis - Blue */}
-      <line>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            array={new Float32Array([0, 0, -5, 0, 0, 5])}
-            count={2}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial color="blue" />
+      <line geometry={zAxisGeometry}>
+        <lineBasicMaterial color="blue" linewidth={2} />
       </line>
       
       {/* Axis Labels */}
-      <Text position={[5.5, 0, 0]} fontSize={0.5} color="red">X</Text>
-      <Text position={[0, 5.5, 0]} fontSize={0.5} color="green">Y</Text>
-      <Text position={[0, 0, 5.5]} fontSize={0.5} color="blue">Z</Text>
+      <Text position={[5.5, 0, 0]} fontSize={0.5} color="red">
+        X-Axis
+      </Text>
+      <Text position={[0, 5.5, 0]} fontSize={0.5} color="green">
+        Y-Axis
+      </Text>
+      <Text position={[0, 0, 5.5]} fontSize={0.5} color="blue">
+        Z-Axis
+      </Text>
     </group>
   );
 };
 
-export const ThreeJSDataVisualization = ({ 
-  data = [
-    { x: 2, y: 3, z: 1, label: "Sales Q1", value: 150, color: "#3b82f6" },
-    { x: -1, y: 2, z: 3, label: "Sales Q2", value: 200, color: "#ef4444" },
-    { x: 3, y: -2, z: 2, label: "Sales Q3", value: 175, color: "#10b981" },
-    { x: -2, y: -1, z: -1, label: "Sales Q4", value: 225, color: "#f59e0b" },
-    { x: 1, y: 4, z: -2, label: "Marketing", value: 100, color: "#8b5cf6" },
-    { x: -3, y: 1, z: 2, label: "Operations", value: 125, color: "#06b6d4" }
-  ],
-  title = "3D Data Visualization"
-}: ThreeJSDataVisualizationProps) => {
-  const orbitRef = useRef<any>();
+const Scene = ({ data }: { data: DataPoint[] }) => {
+  return (
+    <>
+      <ambientLight intensity={0.6} />
+      <pointLight position={[10, 10, 10]} intensity={1} />
+      <AxisLines />
+      {data.map((point, index) => (
+        <DataSphere key={index} point={point} index={index} />
+      ))}
+    </>
+  );
+};
+
+const CameraController = ({ onReset }: { onReset: () => void }) => {
+  const { camera, gl } = useThree();
+  const controlsRef = useRef<any>();
 
   const resetView = () => {
-    if (orbitRef.current) {
-      orbitRef.current.reset();
+    if (controlsRef.current) {
+      camera.position.set(10, 10, 10);
+      camera.lookAt(0, 0, 0);
+      controlsRef.current.reset();
+      onReset();
     }
   };
 
+  React.useEffect(() => {
+    if (controlsRef.current) {
+      resetView();
+    }
+  }, []);
+
   return (
-    <div className="w-full h-96 relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg overflow-hidden">
+    <>
+      <OrbitControls
+        ref={controlsRef}
+        args={[camera, gl.domElement]}
+        enablePan={true}
+        enableZoom={true}
+        enableRotate={true}
+      />
+    </>
+  );
+};
+
+export const ThreeJSDataVisualization = ({ data, title }: ThreeJSDataVisualizationProps) => {
+  const [resetKey, setResetKey] = useState(0);
+
+  const handleReset = () => {
+    setResetKey(prev => prev + 1);
+  };
+
+  // Ensure data is valid
+  const validData = useMemo(() => {
+    return data.filter(point => 
+      typeof point.x === 'number' && 
+      typeof point.y === 'number' && 
+      typeof point.z === 'number' &&
+      !isNaN(point.x) && !isNaN(point.y) && !isNaN(point.z)
+    );
+  }, [data]);
+
+  if (!validData.length) {
+    return (
+      <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+        <p className="text-gray-500">No valid data points to display</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-64 relative bg-gradient-to-br from-slate-900 to-slate-700 rounded-lg overflow-hidden">
       <div className="absolute top-4 left-4 z-10">
-        <h3 className="text-white text-lg font-semibold mb-2">{title}</h3>
+        <h3 className="text-white font-semibold text-lg mb-2">{title}</h3>
         <Button
-          onClick={resetView}
-          variant="outline"
+          onClick={handleReset}
           size="sm"
-          className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+          variant="outline"
+          className="bg-white/20 border-white/30 text-white hover:bg-white/30"
         >
           <RotateCcw className="w-4 h-4 mr-2" />
           Reset View
         </Button>
       </div>
       
-      <div className="absolute top-4 right-4 z-10 text-white text-sm">
-        <div className="bg-black/20 p-2 rounded">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-3 h-3 bg-red-500 rounded"></div>
-            <span>X-Axis</span>
-          </div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-3 h-3 bg-green-500 rounded"></div>
-            <span>Y-Axis</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded"></div>
-            <span>Z-Axis</span>
-          </div>
-        </div>
-      </div>
-
-      <Canvas camera={{ position: [8, 8, 8], fov: 75 }}>
-        <ambientLight intensity={0.6} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
-        <directionalLight position={[-10, -10, -5]} intensity={0.5} />
-        
-        <OrbitControls 
-          ref={orbitRef}
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          minDistance={5}
-          maxDistance={50}
-        />
-        
-        <AxisLines />
-        
-        {data.map((point, index) => (
-          <DataSphere
-            key={index}
-            position={[point.x, point.y, point.z]}
-            color={point.color}
-            scale={point.value / 100}
-            label={point.label}
-            value={point.value}
-          />
-        ))}
-        
-        <gridHelper args={[20, 20, 0x444444, 0x222222]} />
+      <Canvas
+        key={resetKey}
+        camera={{ position: [10, 10, 10], fov: 75 }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <CameraController onReset={() => {}} />
+        <Scene data={validData} />
       </Canvas>
+      
+      <div className="absolute bottom-4 right-4 text-white text-xs bg-black/50 p-2 rounded">
+        <div>Red: X-Axis | Green: Y-Axis | Blue: Z-Axis</div>
+        <div>Hover over spheres for details</div>
+      </div>
     </div>
   );
 };
