@@ -8,7 +8,7 @@ import { AdminSettings } from "@/components/AdminSettings";
 import { AdminActivityMonitor } from "@/components/AdminActivityMonitor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, FileText, BarChart3, Settings, Activity, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Users, FileText, BarChart3, Settings, Activity, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { isAdmin, requireAdmin } from "@/utils/adminUtils";
 
@@ -164,7 +164,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Response Time</span>
-              <Badge className="bg-blue-100 text-blue-800">< 100ms</Badge>
+              <Badge className="bg-blue-100 text-blue-800">Less than 100ms</Badge>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Error Rate</span>
