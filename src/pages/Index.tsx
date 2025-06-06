@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { AuthModal } from "@/components/AuthModal";
@@ -5,7 +6,6 @@ import { AdminPanel } from "@/components/AdminPanel";
 import { FileUpload } from "@/components/FileUpload";
 import { ChartDisplay } from "@/components/ChartDisplay";
 import { UploadHistory } from "@/components/UploadHistory";
-import { ThreeJSChart } from "@/components/ThreeJSChart";
 import { AIInsights } from "@/components/AIInsights";
 import { QuickAnalysisPreview } from "@/components/QuickAnalysisPreview";
 import Dashboard from "./Dashboard";
@@ -31,10 +31,9 @@ const Index = () => {
     setShowAuthModal(false);
     toast.success(`Welcome ${user.name}!`);
     
-    // Redirect admin users to admin panel (separate page)
+    // Don't auto-redirect admin users, let them choose
     if (user.role === 'admin') {
-      window.location.href = '/admin';
-      return;
+      toast.success("Admin access granted! You can access the admin panel anytime.");
     }
   };
 
@@ -62,6 +61,14 @@ const Index = () => {
   const handleDataUploaded = (data: any) => {
     setUploadedData(data);
     console.log("Data uploaded:", data);
+  };
+
+  const handleAccessAdminPanel = () => {
+    if (currentUser?.role === 'admin') {
+      window.location.href = '/admin';
+    } else {
+      toast.error("Access denied. Admin privileges required.");
+    }
   };
 
   const renderCurrentPage = () => {
@@ -95,8 +102,8 @@ const Index = () => {
       },
       {
         icon: <TrendingUp className="h-8 w-8 text-purple-600" />,
-        title: "3D Visualizations",
-        description: "Immersive 3D charts with real-time animations and controls"
+        title: "Data Visualizations",
+        description: "Interactive charts with real-time animations and controls"
       },
       {
         icon: <Brain className="h-8 w-8 text-pink-600" />,
@@ -127,8 +134,25 @@ const Index = () => {
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
             Upload Excel files and unlock the power of advanced analytics with AI-driven insights, 
-            interactive 2D/3D visualizations, and professional reports. Experience the future of data analysis.
+            interactive visualizations, and professional reports. Experience the future of data analysis.
           </p>
+          
+          {/* Admin Panel Access Button - Available to all users */}
+          <div className="mb-8">
+            <Button 
+              onClick={handleAccessAdminPanel}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg"
+            >
+              <Shield className="w-5 h-5 mr-2" />
+              Access Admin Panel
+            </Button>
+            <p className="text-sm text-gray-500 mt-2">
+              {currentUser ? 
+                (currentUser.role === 'admin' ? 'You have admin access' : 'Admin privileges required') : 
+                'Login required'
+              }
+            </p>
+          </div>
           
           {/* Enhanced Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
@@ -158,7 +182,7 @@ const Index = () => {
 
         {/* Enhanced Main Application Tabs */}
         <Tabs defaultValue="upload" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-5 bg-white/90 backdrop-blur-sm shadow-xl rounded-xl p-2">
+          <TabsList className="grid w-full grid-cols-4 bg-white/90 backdrop-blur-sm shadow-xl rounded-xl p-2">
             <TabsTrigger 
               value="upload" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
@@ -171,14 +195,7 @@ const Index = () => {
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
             >
               <BarChart3 className="w-4 h-4 mr-2" />
-              2D Charts
-            </TabsTrigger>
-            <TabsTrigger 
-              value="3d" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
-            >
-              <TrendingUp className="w-4 h-4 mr-2" />
-              3D Views
+              Charts
             </TabsTrigger>
             <TabsTrigger 
               value="ai" 
@@ -272,20 +289,6 @@ const Index = () => {
               selectedChart={selectedChart}
               onChartChange={setSelectedChart}
             />
-          </TabsContent>
-
-          <TabsContent value="3d" className="space-y-6">
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3">
-                  <TrendingUp className="w-6 h-6" />
-                  Interactive 3D Data Visualization
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8">
-                <ThreeJSChart data={uploadedData} />
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="ai" className="space-y-6">
