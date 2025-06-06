@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, FileText, BarChart3, Settings, Activity, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { isAdmin, requireAdmin } from "@/utils/adminUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminDashboardProps {
   currentUser: any;
@@ -19,6 +19,8 @@ interface AdminDashboardProps {
 
 const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
   const [currentView, setCurrentView] = useState("overview");
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -28,14 +30,50 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
     storage: "45GB / 100GB"
   });
 
-  // Check admin access
+  // Check user role from Supabase
   useEffect(() => {
-    if (!requireAdmin(currentUser)) {
-      toast.error("Access denied. Admin privileges required.");
-      window.location.href = '/';
-      return;
-    }
-  }, [currentUser]);
+    const checkUserRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast.error("Please log in to access the admin panel");
+          window.location.href = '/';
+          return;
+        }
+
+        // Get user role from user_profiles table
+        const { data: profile, error } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user role:', error);
+          toast.error("Error checking admin access");
+          window.location.href = '/';
+          return;
+        }
+
+        if (profile?.role !== 'admin') {
+          toast.error("Access denied. Admin privileges required.");
+          window.location.href = '/';
+          return;
+        }
+
+        setUserRole(profile.role);
+      } catch (error) {
+        console.error('Error in admin check:', error);
+        toast.error("Error checking admin access");
+        window.location.href = '/';
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUserRole();
+  }, []);
 
   useEffect(() => {
     // Simulate loading system stats
@@ -51,7 +89,18 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
     }, 500);
   }, []);
 
-  if (!isAdmin(currentUser)) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Checking admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (userRole !== 'admin') {
     return (
       <div className="min-h-screen bg-red-50 flex items-center justify-center">
         <Card className="max-w-md">
@@ -258,7 +307,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
       <AdminNavbar 
         currentUser={currentUser}
         onLogout={onLogout}
-        currentView={currentView}
+        currentSection={currentView}
         onNavigate={setCurrentView}
       />
       

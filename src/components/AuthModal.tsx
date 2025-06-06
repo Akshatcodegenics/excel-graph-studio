@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GoogleAuth } from "./GoogleAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthModalProps {
   open: boolean;
@@ -31,35 +32,45 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
-      if (loginData.email === "admin@admin.com" && loginData.password === "admin") {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginData.email,
+        password: loginData.password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Get user profile to determine role
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .single();
+
         const user = {
-          id: 1,
-          name: "Admin User",
-          email: loginData.email,
-          role: "admin",
-          joinDate: "2024-01-01",
+          id: data.user.id,
+          name: data.user.user_metadata?.name || data.user.email,
+          email: data.user.email,
+          role: profile?.role || 'user',
+          joinDate: data.user.created_at,
           provider: "email"
         };
-        onAuthSuccess(user);
-        toast.success("Admin login successful!");
-      } else if (loginData.email && loginData.password) {
-        const user = {
-          id: 2,
-          name: "John Doe",
-          email: loginData.email,
-          role: "user",
-          joinDate: "2024-06-01",
-          provider: "email"
-        };
+        
         onAuthSuccess(user);
         toast.success("Login successful!");
-      } else {
-        toast.error("Invalid credentials");
+        onOpenChange(false);
       }
-      setIsLoading(false);
-      onOpenChange(false);
-    }, 1000);
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error("Login failed");
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -71,20 +82,56 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     
     setIsLoading(true);
     
-    setTimeout(() => {
-      const user = {
-        id: Date.now(),
-        name: signupData.name,
+    try {
+      const { data, error } = await supabase.auth.signUp({
         email: signupData.email,
-        role: signupData.role,
-        joinDate: new Date().toISOString().split('T')[0],
-        provider: "email"
-      };
-      onAuthSuccess(user);
-      toast.success(`Account created successfully as ${signupData.role}!`);
-      setIsLoading(false);
-      onOpenChange(false);
-    }, 1000);
+        password: signupData.password,
+        options: {
+          data: {
+            name: signupData.name,
+          }
+        }
+      });
+
+      if (error) {
+        toast.error(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Create user profile with selected role
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: data.user.id,
+            role: signupData.role as 'admin' | 'user'
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          toast.error("Account created but profile setup failed");
+        } else {
+          const user = {
+            id: data.user.id,
+            name: signupData.name,
+            email: signupData.email,
+            role: signupData.role,
+            joinDate: data.user.created_at,
+            provider: "email"
+          };
+          
+          onAuthSuccess(user);
+          toast.success(`Account created successfully as ${signupData.role}!`);
+          onOpenChange(false);
+        }
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast.error("Signup failed");
+    }
+    
+    setIsLoading(false);
   };
 
   const handleGoogleAuthSuccess = (user: any) => {
@@ -153,9 +200,6 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Logging in..." : "Login"}
                 </Button>
-                <p className="text-sm text-gray-600 text-center">
-                  Demo: admin@admin.com / admin for admin access
-                </p>
               </form>
             </TabsContent>
             
