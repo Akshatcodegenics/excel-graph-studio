@@ -1,7 +1,7 @@
 
 import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, Box } from '@react-three/drei';
+import { OrbitControls, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
@@ -63,44 +63,43 @@ const DataSphere = ({ point, index }: { point: DataPoint; index: number }) => {
 };
 
 const AxisLines = () => {
-  const points = useMemo(() => [
-    // X-axis
+  const xAxisPoints = useMemo(() => [
     new THREE.Vector3(-5, 0, 0),
-    new THREE.Vector3(5, 0, 0),
-    // Y-axis  
-    new THREE.Vector3(0, -5, 0),
-    new THREE.Vector3(0, 5, 0),
-    // Z-axis
-    new THREE.Vector3(0, 0, -5),
-    new THREE.Vector3(0, 0, 5),
+    new THREE.Vector3(5, 0, 0)
   ], []);
 
-  const xAxisGeometry = useMemo(() => {
-    const geometry = new THREE.BufferGeometry().setFromPoints([points[0], points[1]]);
-    return geometry;
-  }, [points]);
+  const yAxisPoints = useMemo(() => [
+    new THREE.Vector3(0, -5, 0),
+    new THREE.Vector3(0, 5, 0)
+  ], []);
 
-  const yAxisGeometry = useMemo(() => {
-    const geometry = new THREE.BufferGeometry().setFromPoints([points[2], points[3]]);
-    return geometry;
-  }, [points]);
-
-  const zAxisGeometry = useMemo(() => {
-    const geometry = new THREE.BufferGeometry().setFromPoints([points[4], points[5]]);
-    return geometry;
-  }, [points]);
+  const zAxisPoints = useMemo(() => [
+    new THREE.Vector3(0, 0, -5),
+    new THREE.Vector3(0, 0, 5)
+  ], []);
 
   return (
     <group>
-      <line geometry={xAxisGeometry}>
-        <lineBasicMaterial color="red" linewidth={2} />
-      </line>
-      <line geometry={yAxisGeometry}>
-        <lineBasicMaterial color="green" linewidth={2} />
-      </line>
-      <line geometry={zAxisGeometry}>
-        <lineBasicMaterial color="blue" linewidth={2} />
-      </line>
+      {/* X-axis line */}
+      <Line
+        points={xAxisPoints}
+        color="red"
+        lineWidth={2}
+      />
+      
+      {/* Y-axis line */}
+      <Line
+        points={yAxisPoints}
+        color="green"
+        lineWidth={2}
+      />
+      
+      {/* Z-axis line */}
+      <Line
+        points={zAxisPoints}
+        color="blue"
+        lineWidth={2}
+      />
       
       {/* Axis Labels */}
       <Text position={[5.5, 0, 0]} fontSize={0.5} color="red">
