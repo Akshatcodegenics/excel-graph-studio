@@ -24,7 +24,7 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     email: "", 
     password: "", 
     confirmPassword: "",
-    role: "student" as "faculty" | "student" | "admin"
+    role: "user"
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -56,7 +56,7 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
           id: data.user.id,
           name: data.user.user_metadata?.name || data.user.email,
           email: data.user.email,
-          role: profile?.role || 'student',
+          role: profile?.role || 'user',
           joinDate: data.user.created_at,
           provider: "email"
         };
@@ -105,7 +105,7 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
           .from('user_profiles')
           .insert({
             user_id: data.user.id,
-            role: signupData.role
+            role: signupData.role as 'admin' | 'user'
           });
 
         if (profileError) {
@@ -228,13 +228,12 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                 </div>
                 <div>
                   <Label htmlFor="role">Account Type</Label>
-                  <Select value={signupData.role} onValueChange={(value: "faculty" | "student" | "admin") => setSignupData({...signupData, role: value})}>
+                  <Select value={signupData.role} onValueChange={(value) => setSignupData({...signupData, role: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select account type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="faculty">Faculty</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
