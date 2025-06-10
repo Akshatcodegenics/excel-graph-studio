@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { AuthModal } from "@/components/AuthModal";
-import { AdminPanel } from "@/components/AdminPanel";
 import { FileUpload } from "@/components/FileUpload";
 import { ChartDisplay } from "@/components/ChartDisplay";
 import { UploadHistory } from "@/components/UploadHistory";
@@ -17,45 +16,65 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, BarChart3, FileSpreadsheet, Zap, Users, Download, Brain, Sparkles, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { getUser, switchToAdmin } from "@/utils/adminUtils";
+import { getCurrentUser, signOut, isAdmin, type AppUser } from "@/utils/authUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [uploadedData, setUploadedData] = useState(null);
   const [selectedChart, setSelectedChart] = useState("bar");
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentPage, setCurrentPage] = useState("upload");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleAuthSuccess = (user: any) => {
-    setCurrentUser(user);
+  useEffect(() => {
+    // Check for existing session
+    const initializeAuth = async () => {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error getting user:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleAuthSuccess = async (user: any) => {
+    const fullUser = await getCurrentUser();
+    setCurrentUser(fullUser);
     setShowAuthModal(false);
-    toast.success(`Welcome ${user.name}!`);
+    toast.success(`Welcome ${fullUser?.profile?.first_name || fullUser?.email}!`);
     
-    // Don't auto-redirect admin users, let them choose
-    if (user.role === 'admin') {
+    if (fullUser?.role === 'admin') {
       toast.success("Admin access granted! You can access the admin panel anytime.");
     }
   };
 
-  const handleLogout = () => {
-    // Clear user session
-    setCurrentUser(null);
-    setCurrentPage("upload");
-    
-    // If user was authenticated via Google, perform Google sign out
-    if (currentUser?.provider === 'google') {
-      // Create invisible iframe to sign out from Google
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = 'https://accounts.google.com/logout';
-      document.body.appendChild(iframe);
-      
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setCurrentUser(null);
+      setCurrentPage("upload");
+      toast.success("Logged out successfully");
+    } catch (error) {
+      toast.error("Error logging out");
     }
-    
-    toast.success("Logged out successfully");
   };
 
   const handleDataUploaded = (data: any) => {
@@ -64,7 +83,7 @@ const Index = () => {
   };
 
   const handleAccessAdminPanel = () => {
-    if (currentUser?.role === 'admin') {
+    if (isAdmin(currentUser)) {
       window.location.href = '/admin';
     } else {
       toast.error("Access denied. Admin privileges required.");
@@ -80,7 +99,6 @@ const Index = () => {
       case 'reports':
         return <Reports currentUser={currentUser} />;
       case 'admin':
-        // This should redirect to separate admin page
         window.location.href = '/admin';
         return null;
       default:
@@ -98,7 +116,7 @@ const Index = () => {
       {
         icon: <BarChart3 className="h-8 w-8 text-green-600" />,
         title: "Advanced Charts",
-        description: "Generate 7 types of interactive charts with download capabilities"
+        description: "Generate interactive 2D charts with download capabilities"
       },
       {
         icon: <TrendingUp className="h-8 w-8 text-purple-600" />,
@@ -121,7 +139,6 @@ const Index = () => {
 
     return (
       <div className="container mx-auto px-6 py-8">
-        {/* Enhanced Hero Section */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-4">
             <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-4 py-2">
@@ -134,10 +151,10 @@ const Index = () => {
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
             Upload Excel files and unlock the power of advanced analytics with AI-driven insights, 
-            interactive visualizations, and professional reports. Experience the future of data analysis.
+            interactive visualizations, and professional reports.
           </p>
           
-          {/* Admin Panel Access Button - Available to all users */}
+          {/* Admin Panel Access Button */}
           <div className="mb-8">
             <Button 
               onClick={handleAccessAdminPanel}
@@ -148,13 +165,13 @@ const Index = () => {
             </Button>
             <p className="text-sm text-gray-500 mt-2">
               {currentUser ? 
-                (currentUser.role === 'admin' ? 'You have admin access' : 'Admin privileges required') : 
+                (isAdmin(currentUser) ? 'You have admin access' : 'Admin privileges required') : 
                 'Login required'
               }
             </p>
           </div>
           
-          {/* Enhanced Stats */}
+          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
             {stats.map((stat, index) => (
               <div key={index} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -165,7 +182,7 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Enhanced Features Grid */}
+        {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {features.map((feature, index) => (
             <Card key={index} className="shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group">
@@ -180,7 +197,7 @@ const Index = () => {
           ))}
         </div>
 
-        {/* Enhanced Main Application Tabs */}
+        {/* Main Application Tabs */}
         <Tabs defaultValue="upload" className="space-y-8">
           <TabsList className="grid w-full grid-cols-4 bg-white/90 backdrop-blur-sm shadow-xl rounded-xl p-2">
             <TabsTrigger 
@@ -302,6 +319,17 @@ const Index = () => {
       </div>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">

@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GoogleAuth } from "./GoogleAuth";
 import { toast } from "sonner";
+import { signUp, signIn } from "@/utils/authUtils";
 
 interface AuthModalProps {
   open: boolean;
@@ -19,11 +18,12 @@ interface AuthModalProps {
 export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps) => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({ 
-    name: "", 
+    firstName: "",
+    lastName: "",
     email: "", 
     password: "", 
     confirmPassword: "",
-    role: "user"
+    role: "user" as "user" | "admin"
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,35 +31,24 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
-      if (loginData.email === "admin@admin.com" && loginData.password === "admin") {
-        const user = {
-          id: 1,
-          name: "Admin User",
-          email: loginData.email,
-          role: "admin",
-          joinDate: "2024-01-01",
-          provider: "email"
-        };
-        onAuthSuccess(user);
-        toast.success("Admin login successful!");
-      } else if (loginData.email && loginData.password) {
-        const user = {
-          id: 2,
-          name: "John Doe",
-          email: loginData.email,
-          role: "user",
-          joinDate: "2024-06-01",
-          provider: "email"
-        };
-        onAuthSuccess(user);
-        toast.success("Login successful!");
-      } else {
-        toast.error("Invalid credentials");
+    try {
+      const { data, error } = await signIn(loginData.email, loginData.password);
+      
+      if (error) {
+        toast.error(error.message);
+        return;
       }
+
+      if (data.user) {
+        toast.success("Login successful!");
+        onAuthSuccess(data.user);
+        onOpenChange(false);
+      }
+    } catch (error) {
+      toast.error("Login failed");
+    } finally {
       setIsLoading(false);
-      onOpenChange(false);
-    }, 1000);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -71,29 +60,30 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     
     setIsLoading(true);
     
-    setTimeout(() => {
-      const user = {
-        id: Date.now(),
-        name: signupData.name,
-        email: signupData.email,
-        role: signupData.role,
-        joinDate: new Date().toISOString().split('T')[0],
-        provider: "email"
-      };
-      onAuthSuccess(user);
-      toast.success(`Account created successfully as ${signupData.role}!`);
+    try {
+      const { data, error } = await signUp(
+        signupData.email, 
+        signupData.password, 
+        signupData.role,
+        signupData.firstName,
+        signupData.lastName
+      );
+      
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (data.user) {
+        toast.success(`Account created successfully as ${signupData.role}!`);
+        onAuthSuccess(data.user);
+        onOpenChange(false);
+      }
+    } catch (error) {
+      toast.error("Signup failed");
+    } finally {
       setIsLoading(false);
-      onOpenChange(false);
-    }, 1000);
-  };
-
-  const handleGoogleAuthSuccess = (user: any) => {
-    onAuthSuccess(user);
-    onOpenChange(false);
-  };
-
-  const handleGoogleAuthError = (error: string) => {
-    toast.error(error);
+    }
   };
 
   return (
@@ -106,20 +96,6 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
         </DialogHeader>
         
         <div className="space-y-6">
-          <GoogleAuth 
-            onAuthSuccess={handleGoogleAuthSuccess} 
-            onError={handleGoogleAuthError}
-          />
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
-            </div>
-          </div>
-
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
@@ -153,23 +129,32 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Logging in..." : "Login"}
                 </Button>
-                <p className="text-sm text-gray-600 text-center">
-                  Demo: admin@admin.com / admin for admin access
-                </p>
               </form>
             </TabsContent>
             
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={signupData.name}
-                    onChange={(e) => setSignupData({...signupData, name: e.target.value})}
-                    placeholder="Enter your full name"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={signupData.firstName}
+                      onChange={(e) => setSignupData({...signupData, firstName: e.target.value})}
+                      placeholder="First name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={signupData.lastName}
+                      onChange={(e) => setSignupData({...signupData, lastName: e.target.value})}
+                      placeholder="Last name"
+                      required
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="signup-email">Email</Label>
@@ -184,7 +169,7 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                 </div>
                 <div>
                   <Label htmlFor="role">Account Type</Label>
-                  <Select value={signupData.role} onValueChange={(value) => setSignupData({...signupData, role: value})}>
+                  <Select value={signupData.role} onValueChange={(value: "user" | "admin") => setSignupData({...signupData, role: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select account type" />
                     </SelectTrigger>

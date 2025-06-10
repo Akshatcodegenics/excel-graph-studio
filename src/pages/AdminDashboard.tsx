@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AdminNavbar } from "@/components/AdminNavbar";
 import { AdminUsers } from "@/components/AdminUsers";
@@ -10,14 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, FileText, BarChart3, Settings, Activity, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { getCurrentUser, isAdmin, type AppUser } from "@/utils/authUtils";
 
-interface AdminDashboardProps {
-  currentUser: any;
-  onLogout: () => void;
-}
-
-const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
+const AdminDashboard = () => {
   const [currentSection, setCurrentSection] = useState("overview");
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -27,14 +24,26 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
     storage: "45GB / 100GB"
   });
 
-  // Check admin access
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'admin') {
-      toast.error("Access denied. Admin privileges required.");
-      window.location.href = '/';
-      return;
-    }
-  }, [currentUser]);
+    const initializeAuth = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!user || !isAdmin(user)) {
+          toast.error("Access denied. Admin privileges required.");
+          window.location.href = '/';
+          return;
+        }
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error getting user:', error);
+        window.location.href = '/';
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   useEffect(() => {
     // Simulate loading system stats
@@ -50,7 +59,22 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
     }, 500);
   }, []);
 
-  if (!currentUser || currentUser.role !== 'admin') {
+  const handleLogout = () => {
+    window.location.href = '/';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading admin panel...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser || !isAdmin(currentUser)) {
     return (
       <div className="min-h-screen bg-red-50 flex items-center justify-center">
         <Card className="max-w-md">
@@ -256,7 +280,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
     <div className="min-h-screen bg-gray-100">
       <AdminNavbar 
         currentUser={currentUser}
-        onLogout={onLogout}
+        onLogout={handleLogout}
         currentSection={currentSection}
         onNavigate={setCurrentSection}
       />
