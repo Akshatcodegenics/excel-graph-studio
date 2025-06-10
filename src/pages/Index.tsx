@@ -61,7 +61,7 @@ const Index = () => {
     setShowAuthModal(false);
     toast.success(`Welcome ${fullUser?.profile?.first_name || fullUser?.email}!`);
     
-    if (fullUser?.role === 'admin') {
+    if (isAdmin(fullUser)) {
       toast.success("Admin access granted! You can access the admin panel anytime.");
     }
   };
@@ -115,8 +115,8 @@ const Index = () => {
       },
       {
         icon: <BarChart3 className="h-8 w-8 text-green-600" />,
-        title: "Advanced Charts",
-        description: "Generate interactive 2D charts with download capabilities"
+        title: "Interactive Charts",
+        description: "Generate beautiful 2D charts with download capabilities"
       },
       {
         icon: <TrendingUp className="h-8 w-8 text-purple-600" />,
@@ -155,21 +155,42 @@ const Index = () => {
           </p>
           
           {/* Admin Panel Access Button */}
-          <div className="mb-8">
-            <Button 
-              onClick={handleAccessAdminPanel}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg"
-            >
-              <Shield className="w-5 h-5 mr-2" />
-              Access Admin Panel
-            </Button>
-            <p className="text-sm text-gray-500 mt-2">
-              {currentUser ? 
-                (isAdmin(currentUser) ? 'You have admin access' : 'Admin privileges required') : 
-                'Login required'
-              }
-            </p>
-          </div>
+          {currentUser && (
+            <div className="mb-8">
+              <Button 
+                onClick={handleAccessAdminPanel}
+                className={`px-6 py-3 rounded-lg font-semibold shadow-lg ${
+                  isAdmin(currentUser) 
+                    ? 'bg-red-600 hover:bg-red-700 text-white' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                disabled={!isAdmin(currentUser)}
+              >
+                <Shield className="w-5 h-5 mr-2" />
+                Access Admin Panel
+              </Button>
+              <p className="text-sm text-gray-500 mt-2">
+                {isAdmin(currentUser) ? 
+                  'You have admin access' : 
+                  'Admin privileges required'
+                }
+              </p>
+            </div>
+          )}
+          
+          {/* User Welcome Message */}
+          {currentUser && (
+            <div className="mb-8 p-4 bg-blue-50 rounded-lg">
+              <p className="text-blue-800">
+                Welcome back, {currentUser.profile?.first_name || currentUser.email}! 
+                {isAdmin(currentUser) && (
+                  <span className="ml-2">
+                    <Badge className="bg-red-100 text-red-800">Admin</Badge>
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
           
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">

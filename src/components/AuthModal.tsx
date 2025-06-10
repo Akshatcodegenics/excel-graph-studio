@@ -35,7 +35,7 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
       const { data, error } = await signIn(loginData.email, loginData.password);
       
       if (error) {
-        toast.error(error.message);
+        toast.error(error.message || "Login failed");
         return;
       }
 
@@ -43,9 +43,13 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
         toast.success("Login successful!");
         onAuthSuccess(data.user);
         onOpenChange(false);
+        
+        // Reset form
+        setLoginData({ email: "", password: "" });
       }
     } catch (error) {
-      toast.error("Login failed");
+      console.error("Login error:", error);
+      toast.error("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -53,8 +57,14 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (signupData.password !== signupData.confirmPassword) {
       toast.error("Passwords don't match");
+      return;
+    }
+
+    if (signupData.password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
       return;
     }
     
@@ -70,7 +80,7 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
       );
       
       if (error) {
-        toast.error(error.message);
+        toast.error(error.message || "Signup failed");
         return;
       }
 
@@ -78,9 +88,20 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
         toast.success(`Account created successfully as ${signupData.role}!`);
         onAuthSuccess(data.user);
         onOpenChange(false);
+        
+        // Reset form
+        setSignupData({ 
+          firstName: "",
+          lastName: "",
+          email: "", 
+          password: "", 
+          confirmPassword: "",
+          role: "user"
+        });
       }
     } catch (error) {
-      toast.error("Signup failed");
+      console.error("Signup error:", error);
+      toast.error("Signup failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -174,10 +195,13 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                       <SelectValue placeholder="Select account type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="user">User Account</SelectItem>
+                      <SelectItem value="admin">Admin Account</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {signupData.role === 'admin' ? 'Admin accounts can manage users and access admin panel' : 'User accounts can upload files and create charts'}
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="signup-password">Password</Label>
@@ -186,8 +210,9 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                     type="password"
                     value={signupData.password}
                     onChange={(e) => setSignupData({...signupData, password: e.target.value})}
-                    placeholder="Create a password"
+                    placeholder="Create a password (min. 6 characters)"
                     required
+                    minLength={6}
                   />
                 </div>
                 <div>
@@ -199,6 +224,7 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                     onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
                     placeholder="Confirm your password"
                     required
+                    minLength={6}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
