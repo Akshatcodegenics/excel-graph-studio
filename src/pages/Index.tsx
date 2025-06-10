@@ -9,6 +9,7 @@ import { UploadHistory } from "@/components/UploadHistory";
 import { AuthModal } from "@/components/AuthModal";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface IndexProps {
   currentUser: any;
@@ -17,31 +18,36 @@ interface IndexProps {
 
 const Index = ({ currentUser, onAuthSuccess }: IndexProps) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [chartData, setChartData] = useState<any>(null);
+  const [uploadedData, setUploadedData] = useState<any>(null);
+  const [selectedChart, setSelectedChart] = useState<string>("bar");
+  const [currentPage, setCurrentPage] = useState<string>("upload");
 
-  const handleFileUpload = (file: File) => {
-    setUploadedFile(file);
-    // Simulate processing and generate mock chart data
-    setTimeout(() => {
-      setChartData({
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{
-          label: 'Sample Data',
-          data: [12, 19, 3, 5, 2, 3],
-          backgroundColor: 'rgba(59, 130, 246, 0.5)',
-          borderColor: 'rgba(59, 130, 246, 1)',
-          borderWidth: 1
-        }]
-      });
-    }, 1000);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
+
+  const handleNavigate = (page: string) => {
+    if (page === 'admin') {
+      window.location.href = '/admin';
+    } else {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleDataUploaded = (data: any) => {
+    setUploadedData(data);
+    setCurrentPage("analytics");
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar 
         currentUser={currentUser} 
-        onAuthClick={() => setIsAuthModalOpen(true)} 
+        onAuthClick={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
       />
       
       <main className="container mx-auto px-6 py-8">
@@ -73,17 +79,52 @@ const Index = ({ currentUser, onAuthSuccess }: IndexProps) => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          <div className="space-y-8">
-            <FileUpload onFileUpload={handleFileUpload} />
-            {uploadedFile && <QuickAnalysisPreview file={uploadedFile} />}
+        {currentPage === "upload" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <div className="space-y-8">
+              <FileUpload onDataUploaded={handleDataUploaded} />
+              {uploadedData && <QuickAnalysisPreview data={uploadedData} />}
+            </div>
+            
+            <div className="space-y-8">
+              {uploadedData && (
+                <>
+                  <ChartDisplay 
+                    data={uploadedData} 
+                    selectedChart={selectedChart}
+                    onChartChange={setSelectedChart}
+                  />
+                  <AIInsights data={uploadedData} />
+                </>
+              )}
+            </div>
           </div>
-          
+        )}
+
+        {currentPage === "analytics" && uploadedData && (
           <div className="space-y-8">
-            {chartData && <ChartDisplay data={chartData} />}
-            {chartData && <AIInsights />}
+            <ChartDisplay 
+              data={uploadedData} 
+              selectedChart={selectedChart}
+              onChartChange={setSelectedChart}
+            />
+            <AIInsights data={uploadedData} />
           </div>
-        </div>
+        )}
+
+        {currentPage === "dashboard" && (
+          <div className="text-center py-12">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">Dashboard</h2>
+            <p className="text-gray-600">Upload data to view your dashboard analytics</p>
+          </div>
+        )}
+
+        {currentPage === "reports" && (
+          <div className="text-center py-12">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">Reports</h2>
+            <p className="text-gray-600">Generate AI-powered reports from your data</p>
+          </div>
+        )}
 
         <UploadHistory />
 
