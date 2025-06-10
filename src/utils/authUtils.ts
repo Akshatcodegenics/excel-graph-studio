@@ -65,19 +65,6 @@ export const signIn = async (email: string, password: string) => {
   return { data, error: null }
 }
 
-export const signInWithGoogle = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/`
-    }
-  })
-
-  if (error) return { error }
-
-  return { data, error: null }
-}
-
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut()
   return { error }
@@ -85,23 +72,4 @@ export const signOut = async () => {
 
 export const isAdmin = (user: AppUser | null): boolean => {
   return user?.role === 'admin'
-}
-
-export const logActivity = async (action: string, target: string, activityType: string, details?: string) => {
-  const user = await getCurrentUser()
-  if (!user) return
-
-  const { error } = await supabase
-    .from('activities')
-    .insert({
-      user_id: user.id,
-      action,
-      target,
-      activity_type: activityType,
-      details
-    })
-
-  if (error) {
-    console.error('Failed to log activity:', error)
-  }
 }
