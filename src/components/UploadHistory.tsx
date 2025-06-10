@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,123 +8,166 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { FileViewer } from "./FileViewer";
 import { useFileViewer } from "@/hooks/useFileViewer";
+import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/utils/authUtils";
 
 interface HistoryItem {
   id: string;
-  fileName: string;
-  uploadDate: string;
-  fileSize: string;
-  chartTypes: string[];
+  file_name: string;
+  upload_date: string;
+  file_size: string;
+  chart_types: string[];
   status: 'completed' | 'processing' | 'failed';
-  downloadCount: number;
-  userName: string;
+  download_count: number;
 }
 
 export const UploadHistory = () => {
-  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([
-    {
-      id: '1',
-      fileName: 'sales_data_2024.xlsx',
-      uploadDate: '2024-01-15',
-      fileSize: '2.3 MB',
-      chartTypes: ['Bar', 'Line', 'Pie'],
-      status: 'completed',
-      downloadCount: 12,
-      userName: 'John Doe'
-    },
-    {
-      id: '2',
-      fileName: 'customer_analytics.xlsx',
-      uploadDate: '2024-01-14',
-      fileSize: '1.8 MB',
-      chartTypes: ['Bar', '3D'],
-      status: 'completed',
-      downloadCount: 8,
-      userName: 'Jane Smith'
-    },
-    {
-      id: '3',
-      fileName: 'revenue_report_q4.xlsx',
-      uploadDate: '2024-01-13',
-      fileSize: '3.1 MB',
-      chartTypes: ['Line', 'Doughnut'],
-      status: 'processing',
-      downloadCount: 0,
-      userName: 'Mike Johnson'
-    },
-    {
-      id: '4',
-      fileName: 'market_research.xlsx',
-      uploadDate: '2024-01-12',
-      fileSize: '4.5 MB',
-      chartTypes: ['Bar'],
-      status: 'failed',
-      downloadCount: 0,
-      userName: 'Sarah Wilson'
-    }
-  ]);
-
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   const filteredItems = historyItems.filter(item =>
-    item.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.userName.toLowerCase().includes(searchTerm.toLowerCase())
+    item.file_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const { isViewerOpen, selectedFile, openFileViewer, closeFileViewer } = useFileViewer();
 
+  useEffect(() => {
+    fetchUserFiles();
+  }, []);
+
+  const fetchUserFiles = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('files')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('upload_date', { ascending: false });
+
+      if (error) throw error;
+
+      setHistoryItems(data.map(file => ({
+        id: file.id,
+        file_name: file.file_name,
+        upload_date: file.upload_date,
+        file_size: file.file_size,
+        chart_types: file.chart_types || [],
+        status: file.status as 'completed' | 'processing' | 'failed',
+        download_count: file.download_count
+      })));
+    } catch (error) {
+      console.error('Error fetching files:', error);
+      toast.error('Failed to load upload history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleView = (item: HistoryItem) => {
     openFileViewer({
       id: item.id,
-      fileName: item.fileName,
-      userName: item.userName,
-      uploadDate: item.uploadDate,
-      fileSize: item.fileSize,
+      fileName: item.file_name,
+      uploadDate: item.upload_date,
+      fileSize: item.file_size,
       status: item.status,
-      chartTypes: item.chartTypes,
-      downloadCount: item.downloadCount
+      chartTypes: item.chart_types,
+      downloadCount: item.download_count
     });
   };
 
-  const handleDownload = (item: HistoryItem) => {
+  const handleDownload = async (item: HistoryItem) => {
     if (item.status !== 'completed') {
       toast.error("Cannot download incomplete files");
       return;
     }
 
-    // Simulate file download
-    const link = document.createElement('a');
-    link.href = '#'; // In real app, this would be the file URL
-    link.download = item.fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Update download count in database
+      const { error } = await supabase
+        .from('files')
+        .update({ download_count: item.download_count + 1 })
+        .eq('id', item.id);
 
-    // Update download count
-    setHistoryItems(prev => prev.map(historyItem =>
-      historyItem.id === item.id
-        ? { ...historyItem, downloadCount: historyItem.downloadCount + 1 }
-        : historyItem
-    ));
+      if (error) throw error;
 
-    toast.success(`Downloaded ${item.fileName}`);
+      // Log the activity
+      await logActivity('Downloaded file', item.file_name, 'download');
+
+      // Update local state
+      setHistoryItems(prev => prev.map(historyItem =>
+        historyItem.id === item.id
+          ? { ...historyItem, download_count: historyItem.download_count + 1 }
+          : historyItem
+      ));
+
+      toast.success(`Downloaded ${item.file_name}`);
+    } catch (error) {
+      console.error('Error updating download count:', error);
+      toast.error('Download failed');
+    }
   };
 
-  const handleDelete = (itemId: string) => {
-    setHistoryItems(prev => prev.filter(item => item.id !== itemId));
-    toast.success("File deleted successfully");
+  const handleDelete = async (itemId: string) => {
+    try {
+      const item = historyItems.find(h => h.id === itemId);
+      
+      const { error } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      // Log the activity
+      if (item) {
+        await logActivity('Deleted file', item.file_name, 'delete');
+      }
+
+      setHistoryItems(prev => prev.filter(item => item.id !== itemId));
+      toast.success("File deleted successfully");
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error('Failed to delete file');
+    }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedItems.length === 0) {
       toast.error("No items selected");
       return;
     }
 
-    setHistoryItems(prev => prev.filter(item => !selectedItems.includes(item.id)));
-    setSelectedItems([]);
-    toast.success(`Deleted ${selectedItems.length} files`);
+    try {
+      const { error } = await supabase
+        .from('files')
+        .delete()
+        .in('id', selectedItems);
+
+      if (error) throw error;
+
+      // Log activities
+      for (const itemId of selectedItems) {
+        const item = historyItems.find(h => h.id === itemId);
+        if (item) {
+          await logActivity('Deleted file', item.file_name, 'delete');
+        }
+      }
+
+      setHistoryItems(prev => prev.filter(item => !selectedItems.includes(item.id)));
+      setSelectedItems([]);
+      toast.success(`Deleted ${selectedItems.length} files`);
+    } catch (error) {
+      console.error('Error bulk deleting files:', error);
+      toast.error('Failed to delete files');
+    }
   };
 
   const handleBulkDownload = () => {
@@ -144,7 +188,7 @@ export const UploadHistory = () => {
     // Simulate bulk download
     completedItems.forEach(item => {
       setTimeout(() => {
-        toast.success(`Downloaded ${item.fileName}`);
+        handleDownload(item);
       }, Math.random() * 1000);
     });
 
@@ -181,13 +225,27 @@ export const UploadHistory = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-lg border-0 bg-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card className="shadow-lg border-0 bg-white">
         <CardHeader className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-t-lg">
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet size={24} />
-            Upload History & File Management
+            My Upload History & File Management
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
@@ -196,7 +254,7 @@ export const UploadHistory = () => {
             <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search files or users..."
+                placeholder="Search files..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -248,7 +306,7 @@ export const UploadHistory = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <FileSpreadsheet className="text-blue-600" size={20} />
-                          <h3 className="font-semibold text-gray-900">{item.fileName}</h3>
+                          <h3 className="font-semibold text-gray-900">{item.file_name}</h3>
                           <Badge className={getStatusColor(item.status)}>
                             {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                           </Badge>
@@ -257,19 +315,18 @@ export const UploadHistory = () => {
                         <div className="flex items-center gap-6 text-sm text-gray-600 mb-3">
                           <div className="flex items-center gap-1">
                             <Calendar size={14} />
-                            <span>{new Date(item.uploadDate).toLocaleDateString()}</span>
+                            <span>{new Date(item.upload_date).toLocaleDateString()}</span>
                           </div>
-                          <span>{item.fileSize}</span>
-                          <span>By: {item.userName}</span>
-                          <span>Downloads: {item.downloadCount}</span>
+                          <span>{item.file_size}</span>
+                          <span>Downloads: {item.download_count}</span>
                           <div className="flex items-center gap-1">
                             <BarChart3 size={14} />
-                            <span>{item.chartTypes.join(', ')} charts</span>
+                            <span>{item.chart_types.join(', ')} charts</span>
                           </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          {item.chartTypes.map((type) => (
+                          {item.chart_types.map((type) => (
                             <Badge key={type} variant="outline" className="text-xs">
                               {type}
                             </Badge>
@@ -334,19 +391,19 @@ export const UploadHistory = () => {
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600 mb-1">
-                {historyItems.reduce((sum, item) => sum + item.chartTypes.length, 0)}
+                {historyItems.reduce((sum, item) => sum + item.chart_types.length, 0)}
               </div>
               <div className="text-sm text-gray-600">Charts Generated</div>
             </div>
             <div className="p-4 bg-purple-50 rounded-lg">
               <div className="text-2xl font-bold text-purple-600 mb-1">
-                {historyItems.reduce((sum, item) => sum + parseFloat(item.fileSize), 0).toFixed(1)} MB
+                {historyItems.reduce((sum, item) => sum + parseFloat(item.file_size), 0).toFixed(1)} MB
               </div>
               <div className="text-sm text-gray-600">Storage Used</div>
             </div>
             <div className="p-4 bg-orange-50 rounded-lg">
               <div className="text-2xl font-bold text-orange-600 mb-1">
-                {historyItems.reduce((sum, item) => sum + item.downloadCount, 0)}
+                {historyItems.reduce((sum, item) => sum + item.download_count, 0)}
               </div>
               <div className="text-sm text-gray-600">Total Downloads</div>
             </div>

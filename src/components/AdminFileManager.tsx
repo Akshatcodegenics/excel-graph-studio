@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,72 +8,104 @@ import { FileSpreadsheet, Download, Trash2, Eye, Search, Filter } from "lucide-r
 import { toast } from "sonner";
 import { FileViewer } from "./FileViewer";
 import { useFileViewer } from "@/hooks/useFileViewer";
+import { supabase } from "@/integrations/supabase/client";
 
 export const AdminFileManager = () => {
-  const [files, setFiles] = useState([
-    {
-      id: 1,
-      fileName: "sales_data_q1.xlsx",
-      userName: "John Doe",
-      uploadDate: "2024-06-03",
-      size: "2.3 MB",
-      status: "processed",
-      chartsGenerated: 5,
-      downloadCount: 12,
-      aiAnalyzed: true
-    },
-    {
-      id: 2,
-      fileName: "inventory_report.xlsx",
-      userName: "Jane Smith",
-      uploadDate: "2024-06-02",
-      size: "1.8 MB",
-      status: "processed",
-      chartsGenerated: 3,
-      downloadCount: 8,
-      aiAnalyzed: true
-    },
-    {
-      id: 3,
-      fileName: "analytics_dashboard.xlsx",
-      userName: "Mike Johnson",
-      uploadDate: "2024-06-01",
-      size: "3.1 MB",
-      status: "failed",
-      chartsGenerated: 0,
-      downloadCount: 0,
-      aiAnalyzed: false
-    },
-  ]);
-
+  const [files, setFiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const filteredFiles = files.filter(file => {
-    const matchesSearch = file.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         file.userName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = file.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         file.user_email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || file.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const { isViewerOpen, selectedFile, openFileViewer, closeFileViewer } = useFileViewer();
 
-  const handleDeleteFile = (fileId: number) => {
-    setFiles(files.filter(file => file.id !== fileId));
-    toast.success("File deleted successfully");
+  useEffect(() => {
+    fetchAllFiles();
+  }, []);
+
+  const fetchAllFiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('files')
+        .select(`
+          *,
+          user_profiles!inner(first_name, last_name)
+        `)
+        .order('upload_date', { ascending: false });
+
+      if (error) throw error;
+
+      const filesWithUserInfo = data.map(file => ({
+        ...file,
+        user_name: `${file.user_profiles.first_name || ''} ${file.user_profiles.last_name || ''}`.trim(),
+        user_email: file.user_profiles.email || 'Unknown'
+      }));
+
+      setFiles(filesWithUserInfo);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+      toast.error('Failed to load files');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      const { error } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', fileId);
+
+      if (error) throw error;
+
+      setFiles(files.filter(file => file.id !== fileId));
+      toast.success("File deleted successfully");
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error('Failed to delete file');
+    }
   };
 
   const handleDownloadFile = (file: any) => {
-    toast.success(`Downloaded ${file.fileName}`);
+    toast.success(`Downloaded ${file.file_name}`);
   };
 
   const handleViewFile = (file: any) => {
-    openFileViewer(file);
+    openFileViewer({
+      id: file.id,
+      fileName: file.file_name,
+      userName: file.user_name,
+      uploadDate: file.upload_date,
+      size: file.file_size,
+      status: file.status,
+      chartsGenerated: file.chart_types?.length || 0,
+      downloadCount: file.download_count
+    });
   };
 
   const getTotalStorage = () => {
-    return files.reduce((total, file) => total + parseFloat(file.size), 0).toFixed(1);
+    return files.reduce((total, file) => total + parseFloat(file.file_size || '0'), 0).toFixed(1);
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <Card className="shadow-xl border-0 bg-white">
+          <CardContent className="p-12 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading files...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -102,7 +135,7 @@ export const AdminFileManager = () => {
         <Card className="shadow-lg border-0 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
           <CardContent className="p-6 text-center">
             <Eye className="w-8 h-8 mx-auto mb-2" />
-            <div className="text-2xl font-bold">{files.filter(f => f.status === 'processed').length}</div>
+            <div className="text-2xl font-bold">{files.filter(f => f.status === 'completed').length}</div>
             <div className="text-sm opacity-90">Processed</div>
           </CardContent>
         </Card>
@@ -110,7 +143,7 @@ export const AdminFileManager = () => {
         <Card className="shadow-lg border-0 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
           <CardContent className="p-6 text-center">
             <Filter className="w-8 h-8 mx-auto mb-2" />
-            <div className="text-2xl font-bold">{files.reduce((sum, f) => sum + f.downloadCount, 0)}</div>
+            <div className="text-2xl font-bold">{files.reduce((sum, f) => sum + (f.download_count || 0), 0)}</div>
             <div className="text-sm opacity-90">Downloads</div>
           </CardContent>
         </Card>
@@ -141,7 +174,7 @@ export const AdminFileManager = () => {
                 className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Files</option>
-                <option value="processed">Processed</option>
+                <option value="completed">Completed</option>
                 <option value="processing">Processing</option>
                 <option value="failed">Failed</option>
               </select>
@@ -160,33 +193,33 @@ export const AdminFileManager = () => {
                       
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-gray-900">{file.fileName}</h3>
-                          <Badge variant={file.status === 'processed' ? 'default' : 
+                          <h3 className="font-semibold text-gray-900">{file.file_name}</h3>
+                          <Badge variant={file.status === 'completed' ? 'default' : 
                                        file.status === 'processing' ? 'secondary' : 'destructive'}>
                             {file.status}
                           </Badge>
-                          {file.aiAnalyzed && (
-                            <Badge className="bg-purple-100 text-purple-800">AI Analyzed</Badge>
+                          {file.chart_types && file.chart_types.length > 0 && (
+                            <Badge className="bg-purple-100 text-purple-800">Charts: {file.chart_types.length}</Badge>
                           )}
                         </div>
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
                           <div>
-                            <span className="font-medium">User:</span> {file.userName}
+                            <span className="font-medium">User:</span> {file.user_name || 'Unknown'}
                           </div>
                           <div>
-                            <span className="font-medium">Size:</span> {file.size}
+                            <span className="font-medium">Size:</span> {file.file_size}
                           </div>
                           <div>
-                            <span className="font-medium">Charts:</span> {file.chartsGenerated}
+                            <span className="font-medium">Charts:</span> {file.chart_types?.length || 0}
                           </div>
                           <div>
-                            <span className="font-medium">Downloads:</span> {file.downloadCount}
+                            <span className="font-medium">Downloads:</span> {file.download_count || 0}
                           </div>
                         </div>
                         
                         <div className="text-xs text-gray-500 mt-1">
-                          Uploaded: {new Date(file.uploadDate).toLocaleDateString()}
+                          Uploaded: {new Date(file.upload_date).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -201,7 +234,7 @@ export const AdminFileManager = () => {
                         <Eye className="w-4 h-4" />
                       </Button>
                       
-                      {file.status === 'processed' && (
+                      {file.status === 'completed' && (
                         <Button
                           size="sm"
                           variant="outline"

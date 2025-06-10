@@ -3,6 +3,8 @@ import { useState, useRef } from "react";
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, BarChart3, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/utils/authUtils";
 
 interface FileUploadProps {
   onDataUploaded: (data: any) => void;
@@ -79,6 +81,38 @@ export const FileUpload = ({ onDataUploaded }: FileUploadProps) => {
     });
   };
 
+  const saveFileToDatabase = async (fileName: string, fileSize: string, chartTypes: string[]) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('files')
+        .insert({
+          user_id: user.id,
+          file_name: fileName,
+          file_size: fileSize,
+          status: 'completed',
+          chart_types: chartTypes
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log the activity
+      await logActivity('Uploaded file', fileName, 'upload', `File size: ${fileSize}`);
+
+      return data;
+    } catch (error) {
+      console.error('Failed to save file to database:', error);
+      throw error;
+    }
+  };
+
   const handleFiles = async (files: File[]) => {
     const excelFile = files.find(file => 
       file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')
@@ -101,12 +135,16 @@ export const FileUpload = ({ onDataUploaded }: FileUploadProps) => {
 
     try {
       const data = await parseExcelFile(excelFile);
+      const fileSizeFormatted = formatFileSize(excelFile.size);
       
       setFileInfo({
-        size: formatFileSize(excelFile.size),
+        size: fileSizeFormatted,
         rows: data.data.length,
         columns: data.headers.length
       });
+
+      // Save to database
+      await saveFileToDatabase(excelFile.name, fileSizeFormatted, ['Bar', 'Line', 'Pie', '3D']);
 
       // Simulate processing time for better UX
       setTimeout(() => {
@@ -116,9 +154,9 @@ export const FileUpload = ({ onDataUploaded }: FileUploadProps) => {
       }, 1500);
 
     } catch (error) {
-      console.error('Error parsing file:', error);
+      console.error('Error processing file:', error);
       setUploadStatus('error');
-      toast.error("Failed to parse Excel file. Please check the file format.");
+      toast.error("Failed to process Excel file. Please check the file format.");
     }
   };
 
