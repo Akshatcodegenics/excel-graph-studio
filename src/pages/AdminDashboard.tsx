@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, FileText, BarChart3, Settings, Activity, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { isAdmin, requireAdmin } from "@/utils/adminUtils";
 
 interface AdminDashboardProps {
   currentUser: any;
@@ -18,7 +17,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
-  const [currentView, setCurrentView] = useState("overview");
+  const [currentSection, setCurrentSection] = useState("overview");
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -30,7 +29,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
 
   // Check admin access
   useEffect(() => {
-    if (!requireAdmin(currentUser)) {
+    if (!currentUser || currentUser.role !== 'admin') {
       toast.error("Access denied. Admin privileges required.");
       window.location.href = '/';
       return;
@@ -51,7 +50,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
     }, 500);
   }, []);
 
-  if (!isAdmin(currentUser)) {
+  if (!currentUser || currentUser.role !== 'admin') {
     return (
       <div className="min-h-screen bg-red-50 flex items-center justify-center">
         <Card className="max-w-md">
@@ -72,7 +71,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
   }
 
   const renderCurrentView = () => {
-    switch (currentView) {
+    switch (currentSection) {
       case 'users':
         return <AdminUsers />;
       case 'analytics':
@@ -213,7 +212,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <button 
-              onClick={() => setCurrentView('users')}
+              onClick={() => setCurrentSection('users')}
               className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left"
             >
               <Users className="w-8 h-8 text-blue-600 mb-2" />
@@ -222,7 +221,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
             </button>
             
             <button 
-              onClick={() => setCurrentView('analytics')}
+              onClick={() => setCurrentSection('analytics')}
               className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left"
             >
               <BarChart3 className="w-8 h-8 text-green-600 mb-2" />
@@ -231,7 +230,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
             </button>
             
             <button 
-              onClick={() => setCurrentView('files')}
+              onClick={() => setCurrentSection('files')}
               className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left"
             >
               <FileText className="w-8 h-8 text-purple-600 mb-2" />
@@ -240,7 +239,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
             </button>
             
             <button 
-              onClick={() => setCurrentView('settings')}
+              onClick={() => setCurrentSection('settings')}
               className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left"
             >
               <Settings className="w-8 h-8 text-orange-600 mb-2" />
@@ -258,11 +257,11 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
       <AdminNavbar 
         currentUser={currentUser}
         onLogout={onLogout}
-        currentView={currentView}
-        onNavigate={setCurrentView}
+        currentSection={currentSection}
+        onNavigate={setCurrentSection}
       />
       
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
           <p className="text-gray-600">Manage your Excel Analytics platform</p>
