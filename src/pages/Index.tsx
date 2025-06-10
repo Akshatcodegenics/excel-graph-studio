@@ -1,98 +1,325 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
+import { AuthModal } from "@/components/AuthModal";
+import { AdminPanel } from "@/components/AdminPanel";
 import { FileUpload } from "@/components/FileUpload";
 import { ChartDisplay } from "@/components/ChartDisplay";
+import { UploadHistory } from "@/components/UploadHistory";
 import { AIInsights } from "@/components/AIInsights";
 import { QuickAnalysisPreview } from "@/components/QuickAnalysisPreview";
-import { UploadHistory } from "@/components/UploadHistory";
-import { AuthModal } from "@/components/AuthModal";
+import Dashboard from "./Dashboard";
+import Analytics from "./Analytics";
+import Reports from "./Reports";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield } from "lucide-react";
+import { TrendingUp, BarChart3, FileSpreadsheet, Zap, Users, Download, Brain, Sparkles, Shield } from "lucide-react";
+import { toast } from "sonner";
+import { getUser, switchToAdmin } from "@/utils/adminUtils";
 
-interface IndexProps {
-  currentUser: any;
-  onAuthSuccess: (user: any) => void;
-}
+const Index = () => {
+  const [uploadedData, setUploadedData] = useState(null);
+  const [selectedChart, setSelectedChart] = useState("bar");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState("upload");
 
-const Index = ({ currentUser, onAuthSuccess }: IndexProps) => {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [chartData, setChartData] = useState<any>(null);
+  const handleAuthSuccess = (user: any) => {
+    setCurrentUser(user);
+    setShowAuthModal(false);
+    toast.success(`Welcome ${user.name}!`);
+    
+    // Don't auto-redirect admin users, let them choose
+    if (user.role === 'admin') {
+      toast.success("Admin access granted! You can access the admin panel anytime.");
+    }
+  };
 
-  const handleFileUpload = (file: File) => {
-    setUploadedFile(file);
-    // Simulate processing and generate mock chart data
-    setTimeout(() => {
-      setChartData({
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{
-          label: 'Sample Data',
-          data: [12, 19, 3, 5, 2, 3],
-          backgroundColor: 'rgba(59, 130, 246, 0.5)',
-          borderColor: 'rgba(59, 130, 246, 1)',
-          borderWidth: 1
-        }]
-      });
-    }, 1000);
+  const handleLogout = () => {
+    // Clear user session
+    setCurrentUser(null);
+    setCurrentPage("upload");
+    
+    // If user was authenticated via Google, perform Google sign out
+    if (currentUser?.provider === 'google') {
+      // Create invisible iframe to sign out from Google
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = 'https://accounts.google.com/logout';
+      document.body.appendChild(iframe);
+      
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }
+    
+    toast.success("Logged out successfully");
+  };
+
+  const handleDataUploaded = (data: any) => {
+    setUploadedData(data);
+    console.log("Data uploaded:", data);
+  };
+
+  const handleAccessAdminPanel = () => {
+    if (currentUser?.role === 'admin') {
+      window.location.href = '/admin';
+    } else {
+      toast.error("Access denied. Admin privileges required.");
+    }
+  };
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard currentUser={currentUser} />;
+      case 'analytics':
+        return <Analytics currentUser={currentUser} />;
+      case 'reports':
+        return <Reports currentUser={currentUser} />;
+      case 'admin':
+        // This should redirect to separate admin page
+        window.location.href = '/admin';
+        return null;
+      default:
+        return renderUploadPage();
+    }
+  };
+
+  const renderUploadPage = () => {
+    const features = [
+      {
+        icon: <FileSpreadsheet className="h-8 w-8 text-blue-600" />,
+        title: "Smart File Processing",
+        description: "Upload Excel files with instant parsing and intelligent data analysis"
+      },
+      {
+        icon: <BarChart3 className="h-8 w-8 text-green-600" />,
+        title: "Advanced Charts",
+        description: "Generate 7 types of interactive charts with download capabilities"
+      },
+      {
+        icon: <TrendingUp className="h-8 w-8 text-purple-600" />,
+        title: "Data Visualizations",
+        description: "Interactive charts with real-time animations and controls"
+      },
+      {
+        icon: <Brain className="h-8 w-8 text-pink-600" />,
+        title: "AI Analytics",
+        description: "Get intelligent insights, trends analysis, and recommendations"
+      }
+    ];
+
+    const stats = [
+      { label: "Files Processed", value: "1,234+", color: "text-blue-600" },
+      { label: "Charts Generated", value: "5,678+", color: "text-green-600" },
+      { label: "AI Reports", value: "892+", color: "text-purple-600" },
+      { label: "Data Points", value: "2.3M+", color: "text-pink-600" }
+    ];
+
+    return (
+      <div className="container mx-auto px-6 py-8">
+        {/* Enhanced Hero Section */}
+        <div className="text-center mb-12">
+          <div className="flex justify-center mb-4">
+            <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-4 py-2">
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI-Powered Analytics Platform
+            </Badge>
+          </div>
+          <h1 className="text-6xl font-bold text-gray-900 mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Transform Excel Data into Insights
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
+            Upload Excel files and unlock the power of advanced analytics with AI-driven insights, 
+            interactive visualizations, and professional reports. Experience the future of data analysis.
+          </p>
+          
+          {/* Admin Panel Access Button - Available to all users */}
+          <div className="mb-8">
+            <Button 
+              onClick={handleAccessAdminPanel}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg"
+            >
+              <Shield className="w-5 h-5 mr-2" />
+              Access Admin Panel
+            </Button>
+            <p className="text-sm text-gray-500 mt-2">
+              {currentUser ? 
+                (currentUser.role === 'admin' ? 'You have admin access' : 'Admin privileges required') : 
+                'Login required'
+              }
+            </p>
+          </div>
+          
+          {/* Enhanced Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+            {stats.map((stat, index) => (
+              <div key={index} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className={`text-3xl font-bold ${stat.color} mb-1`}>{stat.value}</div>
+                <div className="text-sm text-gray-600">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Enhanced Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {features.map((feature, index) => (
+            <Card key={index} className="shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4 flex justify-center group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-600">{feature.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Enhanced Main Application Tabs */}
+        <Tabs defaultValue="upload" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-4 bg-white/90 backdrop-blur-sm shadow-xl rounded-xl p-2">
+            <TabsTrigger 
+              value="upload" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Upload
+            </TabsTrigger>
+            <TabsTrigger 
+              value="charts" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Charts
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ai" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-600 data-[state=active]:to-pink-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              AI Insights
+            </TabsTrigger>
+            <TabsTrigger 
+              value="history" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-orange-700 data-[state=active]:text-white rounded-lg transition-all duration-300"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              History
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upload" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-shadow duration-300">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <FileSpreadsheet className="w-6 h-6" />
+                    Smart Excel File Upload
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <FileUpload onDataUploaded={handleDataUploaded} />
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-shadow duration-300">
+                <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Zap className="w-6 h-6" />
+                    Quick Analysis Preview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <QuickAnalysisPreview data={uploadedData} />
+                </CardContent>
+              </Card>
+            </div>
+
+            {uploadedData && (
+              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3">
+                    <BarChart3 className="w-6 h-6" />
+                    Data Preview & Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-200 rounded-lg">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
+                          {uploadedData.headers.map((header: string, index: number) => (
+                            <th key={index} className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">
+                              {header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {uploadedData.data.slice(0, 5).map((row: any[], index: number) => (
+                          <tr key={index} className="hover:bg-blue-50 transition-colors">
+                            {row.map((cell: any, cellIndex: number) => (
+                              <td key={cellIndex} className="border border-gray-200 px-4 py-3 text-gray-600">
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {uploadedData.data.length > 5 && (
+                    <p className="text-sm text-gray-500 mt-4 text-center">
+                      Showing first 5 rows of {uploadedData.data.length} total rows
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="charts" className="space-y-6">
+            <ChartDisplay 
+              data={uploadedData} 
+              selectedChart={selectedChart}
+              onChartChange={setSelectedChart}
+            />
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-6">
+            <AIInsights data={uploadedData} />
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6">
+            <UploadHistory />
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Navbar 
-        currentUser={currentUser} 
-        onAuthClick={() => setIsAuthModalOpen(true)} 
+        currentUser={currentUser}
+        onAuthClick={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
       />
       
-      <main className="container mx-auto px-6 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            Excel Analytics & AI Insights
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Transform your Excel data into beautiful charts and get AI-powered insights instantly. 
-            Upload, analyze, and visualize your data with ease.
-          </p>
-          
-          {currentUser && (
-            <div className="mt-6">
-              <Button 
-                onClick={() => window.location.href = '/admin'}
-                className="bg-red-600 hover:bg-red-700 text-white"
-                disabled={currentUser.role !== 'admin'}
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                {currentUser.role === 'admin' ? 'Access Admin Panel' : 'Admin Access (Admin Only)'}
-              </Button>
-              {currentUser.role !== 'admin' && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Admin panel access requires admin role
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+      {renderCurrentPage()}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          <div className="space-y-8">
-            <FileUpload onFileUpload={handleFileUpload} />
-            {uploadedFile && <QuickAnalysisPreview file={uploadedFile} />}
-          </div>
-          
-          <div className="space-y-8">
-            {chartData && <ChartDisplay data={chartData} />}
-            {chartData && <AIInsights />}
-          </div>
-        </div>
-
-        <UploadHistory />
-
-        <AuthModal 
-          open={isAuthModalOpen}
-          onOpenChange={setIsAuthModalOpen}
-          onAuthSuccess={onAuthSuccess}
-        />
-      </main>
+      <AuthModal 
+        open={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 };
