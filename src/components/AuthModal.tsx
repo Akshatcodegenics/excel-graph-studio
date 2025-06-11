@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GoogleAuth } from "./GoogleAuth";
 import { toast } from "sonner";
-import { signUp, signIn } from "@/utils/authUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthModalProps {
   open: boolean;
@@ -18,12 +20,11 @@ interface AuthModalProps {
 export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps) => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({ 
-    firstName: "",
-    lastName: "",
+    name: "", 
     email: "", 
     password: "", 
     confirmPassword: "",
-    role: "user" as "user" | "admin"
+    role: "student" as "faculty" | "student" | "admin"
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,79 +33,114 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     setIsLoading(true);
     
     try {
-      const { data, error } = await signIn(loginData.email, loginData.password);
-      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginData.email,
+        password: loginData.password,
+      });
+
       if (error) {
-        toast.error(error.message || "Login failed");
+        toast.error(error.message);
+        setIsLoading(false);
         return;
       }
 
       if (data.user) {
-        toast.success("Login successful!");
-        onAuthSuccess(data.user);
-        onOpenChange(false);
+        // Get user profile to determine role
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .single();
+
+        const user = {
+          id: data.user.id,
+          name: data.user.user_metadata?.name || data.user.email,
+          email: data.user.email,
+          role: profile?.role || 'student',
+          joinDate: data.user.created_at,
+          provider: "email"
+        };
         
-        // Reset form
-        setLoginData({ email: "", password: "" });
+        onAuthSuccess(user);
+        toast.success("Login successful!");
+        onOpenChange(false);
       }
     } catch (error) {
-      console.error("Login error:", error);
-      toast.error("Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+      console.error('Login error:', error);
+      toast.error("Login failed");
     }
+    
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (signupData.password !== signupData.confirmPassword) {
       toast.error("Passwords don't match");
-      return;
-    }
-
-    if (signupData.password.length < 6) {
-      toast.error("Password must be at least 6 characters long");
       return;
     }
     
     setIsLoading(true);
     
     try {
-      const { data, error } = await signUp(
-        signupData.email, 
-        signupData.password, 
-        signupData.role,
-        signupData.firstName,
-        signupData.lastName
-      );
-      
+      const { data, error } = await supabase.auth.signUp({
+        email: signupData.email,
+        password: signupData.password,
+        options: {
+          data: {
+            name: signupData.name,
+          }
+        }
+      });
+
       if (error) {
-        toast.error(error.message || "Signup failed");
+        toast.error(error.message);
+        setIsLoading(false);
         return;
       }
 
       if (data.user) {
-        toast.success(`Account created successfully as ${signupData.role}!`);
-        onAuthSuccess(data.user);
-        onOpenChange(false);
-        
-        // Reset form
-        setSignupData({ 
-          firstName: "",
-          lastName: "",
-          email: "", 
-          password: "", 
-          confirmPassword: "",
-          role: "user"
-        });
+        // Create user profile with selected role
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: data.user.id,
+            role: signupData.role
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          toast.error("Account created but profile setup failed");
+        } else {
+          const user = {
+            id: data.user.id,
+            name: signupData.name,
+            email: signupData.email,
+            role: signupData.role,
+            joinDate: data.user.created_at,
+            provider: "email"
+          };
+          
+          onAuthSuccess(user);
+          toast.success(`Account created successfully as ${signupData.role}!`);
+          onOpenChange(false);
+        }
       }
     } catch (error) {
-      console.error("Signup error:", error);
-      toast.error("Signup failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+      console.error('Signup error:', error);
+      toast.error("Signup failed");
     }
+    
+    setIsLoading(false);
+  };
+
+  const handleGoogleAuthSuccess = (user: any) => {
+    onAuthSuccess(user);
+    onOpenChange(false);
+  };
+
+  const handleGoogleAuthError = (error: string) => {
+    toast.error(error);
   };
 
   return (
@@ -117,6 +153,20 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
         </DialogHeader>
         
         <div className="space-y-6">
+          <GoogleAuth 
+            onAuthSuccess={handleGoogleAuthSuccess} 
+            onError={handleGoogleAuthError}
+          />
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+            </div>
+          </div>
+
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
@@ -155,27 +205,15 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
             
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={signupData.firstName}
-                      onChange={(e) => setSignupData({...signupData, firstName: e.target.value})}
-                      placeholder="First name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={signupData.lastName}
-                      onChange={(e) => setSignupData({...signupData, lastName: e.target.value})}
-                      placeholder="Last name"
-                      required
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={signupData.name}
+                    onChange={(e) => setSignupData({...signupData, name: e.target.value})}
+                    placeholder="Enter your full name"
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="signup-email">Email</Label>
@@ -190,18 +228,16 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                 </div>
                 <div>
                   <Label htmlFor="role">Account Type</Label>
-                  <Select value={signupData.role} onValueChange={(value: "user" | "admin") => setSignupData({...signupData, role: value})}>
+                  <Select value={signupData.role} onValueChange={(value: "faculty" | "student" | "admin") => setSignupData({...signupData, role: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select account type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">User Account</SelectItem>
-                      <SelectItem value="admin">Admin Account</SelectItem>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="faculty">Faculty</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {signupData.role === 'admin' ? 'Admin accounts can manage users and access admin panel' : 'User accounts can upload files and create charts'}
-                  </p>
                 </div>
                 <div>
                   <Label htmlFor="signup-password">Password</Label>
@@ -210,9 +246,8 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                     type="password"
                     value={signupData.password}
                     onChange={(e) => setSignupData({...signupData, password: e.target.value})}
-                    placeholder="Create a password (min. 6 characters)"
+                    placeholder="Create a password"
                     required
-                    minLength={6}
                   />
                 </div>
                 <div>
@@ -224,7 +259,6 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                     onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
                     placeholder="Confirm your password"
                     required
-                    minLength={6}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>

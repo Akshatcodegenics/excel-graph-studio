@@ -1,88 +1,323 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminNavbar } from "@/components/AdminNavbar";
-import { AdminPanel } from "@/components/AdminPanel";
 import { AdminUsers } from "@/components/AdminUsers";
-import { AdminActivityMonitor } from "@/components/AdminActivityMonitor";
-import { AdminFileManager } from "@/components/AdminFileManager";
 import { AdminAnalytics } from "@/components/AdminAnalytics";
+import { AdminFileManager } from "@/components/AdminFileManager";
 import { AdminSettings } from "@/components/AdminSettings";
-import { isAdmin, type AppUser } from "@/utils/authUtils";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { AdminActivityMonitor } from "@/components/AdminActivityMonitor";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Users, FileText, BarChart3, Settings, Activity, AlertTriangle, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminDashboardProps {
-  currentUser: AppUser | null;
+  currentUser: any;
   onLogout: () => void;
 }
 
 const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
-  const [currentSection, setCurrentSection] = useState("overview");
+  const [currentView, setCurrentView] = useState("overview");
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [systemStats, setSystemStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalFiles: 0,
+    systemHealth: "excellent",
+    uptime: "99.9%",
+    storage: "45GB / 100GB"
+  });
 
-  // Check if user is admin
-  if (!currentUser || !isAdmin(currentUser)) {
+  // Check user role from Supabase
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast.error("Please log in to access the admin panel");
+          window.location.href = '/';
+          return;
+        }
+
+        // Get user role from user_profiles table
+        const { data: profile, error } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user role:', error);
+          toast.error("Error checking admin access");
+          window.location.href = '/';
+          return;
+        }
+
+        if (profile?.role !== 'admin') {
+          toast.error("Access denied. Admin privileges required.");
+          window.location.href = '/';
+          return;
+        }
+
+        setUserRole(profile.role);
+      } catch (error) {
+        console.error('Error in admin check:', error);
+        toast.error("Error checking admin access");
+        window.location.href = '/';
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUserRole();
+  }, []);
+
+  useEffect(() => {
+    // Simulate loading system stats
+    setTimeout(() => {
+      setSystemStats({
+        totalUsers: 1234,
+        activeUsers: 89,
+        totalFiles: 5678,
+        systemHealth: "excellent",
+        uptime: "99.9%",
+        storage: "45GB / 100GB"
+      });
+    }, 500);
+  }, []);
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <Card className="shadow-xl border-0 bg-white max-w-md w-full mx-4">
-          <CardContent className="p-12 text-center">
-            <div className="text-red-500 text-6xl mb-4">🚫</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Checking admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (userRole !== 'admin') {
+    return (
+      <div className="min-h-screen bg-red-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
             <p className="text-gray-600 mb-4">You don't have permission to access the admin panel.</p>
-            <p className="text-sm text-gray-500 mb-6">Only users with admin role can access this section.</p>
-            <Button 
-              className="w-full bg-blue-600 hover:bg-blue-700"
+            <button 
               onClick={() => window.location.href = '/'}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
-              Return to Main Dashboard
-            </Button>
+              Return to Home
+            </button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const renderCurrentSection = () => {
-    switch (currentSection) {
-      case 'overview':
-        return <AdminPanel currentUser={currentUser} />;
+  const renderCurrentView = () => {
+    switch (currentView) {
       case 'users':
         return <AdminUsers />;
-      case 'activity':
-        return <AdminActivityMonitor />;
-      case 'files':
-        return <AdminFileManager />;
       case 'analytics':
         return <AdminAnalytics />;
+      case 'files':
+        return <AdminFileManager />;
       case 'settings':
         return <AdminSettings />;
+      case 'activity':
+        return <AdminActivityMonitor />;
       default:
-        return <AdminPanel currentUser={currentUser} />;
+        return renderOverview();
     }
   };
 
+  const renderOverview = () => (
+    <div className="space-y-8">
+      {/* System Health Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="shadow-lg border-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">Total Users</p>
+                <p className="text-3xl font-bold">{systemStats.totalUsers.toLocaleString()}</p>
+              </div>
+              <Users className="h-12 w-12 text-blue-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg border-0 bg-gradient-to-r from-green-500 to-green-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">Active Users</p>
+                <p className="text-3xl font-bold">{systemStats.activeUsers}</p>
+              </div>
+              <Activity className="h-12 w-12 text-green-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg border-0 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-medium">Total Files</p>
+                <p className="text-3xl font-bold">{systemStats.totalFiles.toLocaleString()}</p>
+              </div>
+              <FileText className="h-12 w-12 text-purple-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg border-0 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm font-medium">System Health</p>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-6 h-6" />
+                  <span className="text-lg font-bold">Excellent</span>
+                </div>
+              </div>
+              <Settings className="h-12 w-12 text-orange-200" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* System Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="shadow-xl border-0 bg-white">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-6 h-6" />
+              System Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Uptime</span>
+              <Badge className="bg-green-100 text-green-800">{systemStats.uptime}</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Storage Usage</span>
+              <span className="font-medium">{systemStats.storage}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Response Time</span>
+              <Badge className="bg-blue-100 text-blue-800">Less than 100ms</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Error Rate</span>
+              <Badge className="bg-green-100 text-green-800">0.01%</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xl border-0 bg-white">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-6 h-6" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">User registration completed</span>
+              <span className="text-xs text-gray-400 ml-auto">2 min ago</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">New file uploaded</span>
+              <span className="text-xs text-gray-400 ml-auto">5 min ago</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Chart generated successfully</span>
+              <span className="text-xs text-gray-400 ml-auto">8 min ago</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">AI analysis completed</span>
+              <span className="text-xs text-gray-400 ml-auto">12 min ago</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <Card className="shadow-xl border-0 bg-white">
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button 
+              onClick={() => setCurrentView('users')}
+              className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left"
+            >
+              <Users className="w-8 h-8 text-blue-600 mb-2" />
+              <h3 className="font-semibold">Manage Users</h3>
+              <p className="text-sm text-gray-600">View and manage user accounts</p>
+            </button>
+            
+            <button 
+              onClick={() => setCurrentView('analytics')}
+              className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left"
+            >
+              <BarChart3 className="w-8 h-8 text-green-600 mb-2" />
+              <h3 className="font-semibold">View Analytics</h3>
+              <p className="text-sm text-gray-600">System performance metrics</p>
+            </button>
+            
+            <button 
+              onClick={() => setCurrentView('files')}
+              className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left"
+            >
+              <FileText className="w-8 h-8 text-purple-600 mb-2" />
+              <h3 className="font-semibold">File Manager</h3>
+              <p className="text-sm text-gray-600">Manage uploaded files</p>
+            </button>
+            
+            <button 
+              onClick={() => setCurrentView('settings')}
+              className="p-4 border rounded-lg hover:bg-gray-50 transition-colors text-left"
+            >
+              <Settings className="w-8 h-8 text-orange-600 mb-2" />
+              <h3 className="font-semibold">System Settings</h3>
+              <p className="text-sm text-gray-600">Configure system parameters</p>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <AdminNavbar
+    <div className="min-h-screen bg-gray-100">
+      <AdminNavbar 
         currentUser={currentUser}
         onLogout={onLogout}
-        currentSection={currentSection}
-        onNavigate={setCurrentSection}
+        currentSection={currentView}
+        onNavigate={setCurrentView}
       />
       
-      <div className="pt-16">
-        <div className="container mx-auto px-6 py-8">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-gray-600">
-              Welcome back, {currentUser?.profile?.first_name || currentUser?.email}! 
-              Manage your platform from here.
-            </p>
-          </div>
-          
-          {renderCurrentSection()}
+      <div className="container mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+          <p className="text-gray-600">Manage your Excel Analytics platform</p>
         </div>
+        
+        {renderCurrentView()}
       </div>
     </div>
   );
