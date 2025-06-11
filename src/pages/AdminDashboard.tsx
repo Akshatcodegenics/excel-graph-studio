@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AdminNavbar } from "@/components/AdminNavbar";
 import { AdminUsers } from "@/components/AdminUsers";
@@ -40,7 +41,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
     setAuthenticatedUser(user);
   }, []);
 
-  // Strict admin access control - Enhanced security
+  // Strict admin access control
   if (!authenticatedUser || !requireAdmin(authenticatedUser)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
@@ -62,7 +63,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  // Demo admin access
+                  // Simulate switching to admin user for demo
                   const adminUser = {
                     id: 1,
                     name: "Akshat",
@@ -73,7 +74,7 @@ const AdminDashboard = ({ currentUser, onLogout }: AdminDashboardProps) => {
                     provider: "google"
                   };
                   setAuthenticatedUser(adminUser);
-                  toast.success("Demo admin access granted");
+                  toast.success("Switched to admin user for demo");
                 }}
               >
                 Demo Admin Access
@@ -147,67 +148,38 @@ const AdminOverview = () => {
     { name: "financial_summary.xlsx", uploads: 24, charts: 67, downloads: 98 },
   ]);
 
-  // Enhanced 3D visualization data with more complex metrics
-  const enhanced3DVisualizationData = [
-    { x: 2, y: 156, z: 42, label: "User Activity", value: 156, color: "#3b82f6" },
-    { x: 4, y: 1234, z: 5678, label: "File Processing", value: 1234, color: "#ef4444" },
-    { x: 6, y: 892, z: 3421, label: "AI Analytics", value: 892, color: "#10b981" },
-    { x: 8, y: 234, z: 567, label: "Downloads", value: 234, color: "#f59e0b" },
-    { x: 1, y: 99.9, z: 2.3, label: "System Health", value: 99.9, color: "#8b5cf6" },
-    { x: 3, y: 67.8, z: 89.2, label: "Performance", value: 67.8, color: "#ec4899" },
-    { x: 5, y: 445, z: 223, label: "Storage Usage", value: 445, color: "#06b6d4" },
-    { x: 7, y: 789, z: 156, label: "API Calls", value: 789, color: "#84cc16" }
+  const adminVisualizationData = [
+    { x: 1, y: 156, z: 42, label: "Total Users", value: 156, color: "#3b82f6" },
+    { x: 2, y: 1234, z: 5678, label: "Uploads/Charts", value: 1234, color: "#ef4444" },
+    { x: 3, y: 892, z: 3421, label: "AI Reports", value: 892, color: "#10b981" },
+    { x: 4, y: 99.9, z: 2.3, label: "System Performance", value: 99.9, color: "#f59e0b" }
   ];
 
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Control Center</h1>
-        <p className="text-gray-600">Advanced system monitoring and comprehensive analytics dashboard</p>
-        <div className="flex items-center gap-2 mt-3">
-          <Badge className="bg-red-100 text-red-800">
-            Admin Access - {getUser()?.name}
-          </Badge>
-          <Badge className="bg-blue-100 text-blue-800">
-            Role: {getUser()?.role?.toUpperCase()}
-          </Badge>
-        </div>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Overview</h1>
+        <p className="text-gray-600">Complete system monitoring and user activity dashboard</p>
+        <Badge className="bg-red-100 text-red-800 mt-2">
+          Admin Access - {getUser()?.name}
+        </Badge>
       </div>
 
-      {/* Enhanced 3D System Visualization with better styling */}
-      <Card className="shadow-2xl border-0 bg-white mb-8 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <BarChart3 className="w-7 h-7" />
-            Advanced 3D System Analytics Dashboard
+      {/* 3D System Visualization */}
+      <Card className="shadow-xl border-0 bg-white mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-6 h-6" />
+            3D System Performance Overview
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="h-96">
-            <ThreeJSDataVisualization 
-              data={enhanced3DVisualizationData}
-              title="Real-time System Metrics - Administrative View"
-            />
-          </div>
-          <div className="p-6 bg-gradient-to-r from-gray-50 to-blue-50">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="text-center">
-                <div className="font-semibold text-blue-600">X-Axis</div>
-                <div className="text-gray-600">System Components</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-green-600">Y-Axis</div>
-                <div className="text-gray-600">Primary Metrics</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-red-600">Z-Axis</div>
-                <div className="text-gray-600">Secondary Values</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-purple-600">Sphere Size</div>
-                <div className="text-gray-600">Relative Importance</div>
-              </div>
-            </div>
+        <CardContent>
+          <ThreeJSDataVisualization 
+            data={adminVisualizationData}
+            title="System Metrics - 3D Admin View"
+          />
+          <div className="mt-4 text-sm text-gray-600">
+            <p>3D visualization of system performance. X-axis: Metric Type, Y-axis: Primary Value, Z-axis: Secondary Value</p>
           </div>
         </CardContent>
       </Card>
@@ -327,35 +299,31 @@ const AdminOverview = () => {
         </Card>
       </div>
 
-      {/* Enhanced System Performance Metrics */}
+      {/* System Performance Metrics */}
       <Card className="shadow-xl border-0 bg-white">
-        <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-6 h-6" />
-            Real-time System Performance Metrics
+            System Performance Metrics
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 text-center shadow-lg">
-              <div className="text-3xl font-bold text-blue-600 mb-2">42</div>
-              <div className="text-sm text-blue-700 font-medium">Daily Active Users</div>
-              <div className="text-xs text-blue-600 mt-1">↑ 12% from yesterday</div>
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-blue-600">42</div>
+              <div className="text-sm text-blue-700">Daily Active Users</div>
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 text-center shadow-lg">
-              <div className="text-3xl font-bold text-green-600 mb-2">127</div>
-              <div className="text-sm text-green-700 font-medium">Files Processed Today</div>
-              <div className="text-xs text-green-600 mt-1">↑ 8% from yesterday</div>
+            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-green-600">127</div>
+              <div className="text-sm text-green-700">Files Processed Today</div>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 text-center shadow-lg">
-              <div className="text-3xl font-bold text-purple-600 mb-2">89</div>
-              <div className="text-sm text-purple-700 font-medium">Charts Generated Today</div>
-              <div className="text-xs text-purple-600 mt-1">↑ 15% from yesterday</div>
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-purple-600">89</div>
+              <div className="text-sm text-purple-700">Charts Generated Today</div>
             </div>
-            <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-6 text-center shadow-lg">
-              <div className="text-3xl font-bold text-pink-600 mb-2">34</div>
-              <div className="text-sm text-pink-700 font-medium">AI Reports Generated</div>
-              <div className="text-xs text-pink-600 mt-1">↑ 22% from yesterday</div>
+            <div className="bg-gradient-to-r from-pink-50 to-pink-100 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-pink-600">34</div>
+              <div className="text-sm text-pink-700">AI Reports Generated</div>
             </div>
           </div>
         </CardContent>

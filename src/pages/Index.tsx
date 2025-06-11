@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { AuthModal } from "@/components/AuthModal";
 import { AdminPanel } from "@/components/AdminPanel";
@@ -14,10 +14,8 @@ import Reports from "./Reports";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { TrendingUp, BarChart3, FileSpreadsheet, Zap, Users, Download, Brain, Sparkles, Shield } from "lucide-react";
+import { TrendingUp, BarChart3, FileSpreadsheet, Zap, Users, Download, Brain, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { getUser, switchToAdmin } from "@/utils/adminUtils";
 
 const Index = () => {
   const [uploadedData, setUploadedData] = useState(null);
