@@ -39,8 +39,8 @@ export const getUser = (): User | null => {
     return JSON.parse(currentUser);
   }
 
-  // Default to regular user for testing (change to users[0] for admin access)
-  return users[1]; // Regular user by default
+  // Default to admin for testing
+  return users[0];
 };
 
 export const isAdmin = (user: User | null): boolean => {
@@ -60,33 +60,4 @@ export const setCurrentUser = (user: User | null): void => {
   } else {
     localStorage.removeItem('currentUser');
   }
-};
-
-// Admin access control middleware
-export const switchToAdmin = (): void => {
-  const adminUser = {
-    id: 1,
-    name: "Akshat",
-    email: "akshat@admin.com",
-    role: "admin" as const,
-    avatar: "https://lh3.googleusercontent.com/a/admin-user=s96-c",
-    joinDate: "2024-01-15",
-    provider: "google"
-  };
-  setCurrentUser(adminUser);
-  window.location.reload();
-};
-
-export const switchToUser = (): void => {
-  const regularUser = {
-    id: 2,
-    name: "John Doe",
-    email: "john@user.com",
-    role: "user" as const,
-    avatar: "https://lh3.googleusercontent.com/a/default-user=s96-c",
-    joinDate: "2024-02-10",
-    provider: "google"
-  };
-  setCurrentUser(regularUser);
-  window.location.reload();
 };
