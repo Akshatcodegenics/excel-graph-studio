@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GoogleAuth } from "./GoogleAuth";
 import { toast } from "sonner";
 
@@ -21,7 +22,8 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
     name: "", 
     email: "", 
     password: "", 
-    confirmPassword: "" 
+    confirmPassword: "",
+    role: "user"
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -74,12 +76,12 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
         id: Date.now(),
         name: signupData.name,
         email: signupData.email,
-        role: "user",
+        role: signupData.role,
         joinDate: new Date().toISOString().split('T')[0],
         provider: "email"
       };
       onAuthSuccess(user);
-      toast.success("Account created successfully!");
+      toast.success(`Account created successfully as ${signupData.role}!`);
       setIsLoading(false);
       onOpenChange(false);
     }, 1000);
@@ -179,6 +181,18 @@ export const AuthModal = ({ open, onOpenChange, onAuthSuccess }: AuthModalProps)
                     placeholder="Enter your email"
                     required
                   />
+                </div>
+                <div>
+                  <Label htmlFor="role">Account Type</Label>
+                  <Select value={signupData.role} onValueChange={(value) => setSignupData({...signupData, role: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="signup-password">Password</Label>
