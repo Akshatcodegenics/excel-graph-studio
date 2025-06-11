@@ -1,4 +1,4 @@
-# Welcome to  Excel Project 
+# Welcome to  Excel Analytics Project 
 
 ## Project info
 .
