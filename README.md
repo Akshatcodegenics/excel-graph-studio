@@ -2,7 +2,7 @@
 
 ## Project info
 .
-Excel analysis through. project, which analysis he told data chart Excel format into 3D or 2D graphs. to visualize your data realistic form ,
+Excel analysis through. project, which analysis he told data chart Excel format into 3D or 2D graphs. to visualize your data realistic form
 
 Follow these steps:
 
